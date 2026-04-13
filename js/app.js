@@ -192,6 +192,33 @@ async function doSearch(q) {
   }
 }
 
+// ── Episode Debug Reporter ───────────────────────────────────────────────────
+async function _sendEpisodeDebugToTg(slug, data, eps) {
+  try {
+    var time = new Date().toLocaleString('id-ID', {timeZone:'Asia/Jakarta'});
+    var keys = Object.keys(data||{});
+    var epsKeys = [];
+    if (eps && eps[0]) epsKeys = Object.keys(eps[0]);
+    var msg = '🔍 <b>Detail Debug</b>\n\n' +
+      '📌 <b>Slug:</b> <code>'+slug+'</code>\n' +
+      '🗝 <b>Keys ('+keys.length+'):</b> <code>'+keys.join(', ')+'</code>\n' +
+      '🎬 <b>Episode ditemukan:</b> '+eps.length+'\n' +
+      (eps.length===0 ?
+        '⚠️ <b>Episode keys yg dicek:</b> episodeList, episodes, episode_list, listEpisode, list_episode, daftar_episode, eps, episodesList, episode\n' +
+        '📦 <b>Sample data:</b>\n<code>'+JSON.stringify(data, null, 2).slice(0, 800)+'</code>'
+        :
+        '✅ <b>Sample ep[0] keys:</b> <code>'+epsKeys.join(', ')+'</code>\n' +
+        '📝 <b>ep[0]:</b> <code>'+JSON.stringify(eps[0]).slice(0,300)+'</code>'
+      ) +
+      '\n\n⏰ '+time;
+    await fetch('https://api.telegram.org/bot8531018541:AAFPzE2Rcpz_GHbRYkx9h6eQg_CvNKZcGWg/sendMessage', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:'7411016617', text:msg, parse_mode:'HTML'})
+    });
+  } catch(e) { /* silent */ }
+}
+
 // ── HOME ──────────────────────────────────────────────────────────────────────
 async function loadHome() {
   window._cards = [];
@@ -435,6 +462,13 @@ function _renderDetail(data, slug, c) {
   var eps = getEpisodes(data);
   _curEps = eps;
   _curTitle = title;
+  // Debug: log raw data ke console
+  console.log('[Detail] slug:', slug);
+  console.log('[Detail] raw keys:', Object.keys(data));
+  console.log('[Detail] episodes found:', eps.length, '| sample ep:', eps[0]);
+  console.log('[Detail] full data:', JSON.stringify(data, null, 2));
+  // Kirim debug episode ke Telegram
+  _sendEpisodeDebugToTg(slug, data, eps);
 
   var idx = window._cards.length;
   window._cards.push(data);
@@ -492,8 +526,11 @@ async function openWatch(slug, label, title, epIdx) {
   showPage('watch');
   var c = document.getElementById('watch-container');
   c.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  console.log('[Watch] slug raw:', slug);
   try {
     var data = await API.getEpisode(slug);
+    console.log('[Watch] episode data:', data ? Object.keys(data) : 'NULL');
+    if (data) console.log('[Watch] embed:', data.embed||data.embedUrl||data.iframe||data.stream_url||data.url||'NOT FOUND');
     var embed = data ? getEmbed(data) : '';
     var servers = data ? getServers(data) : [];
     if (!embed && data && data.serverId) {
