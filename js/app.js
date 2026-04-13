@@ -23,11 +23,13 @@ function getSlug(o) {
 }
 function getEpSlug(ep) {
   if (!ep) return '';
-  return ep.slug||ep.episode_id||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
+  // Pakai _slug dari normalizeEpList kalau ada
+  return ep._slug||ep.slug||ep.episode_id||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
 }
 function getEpLabel(ep, i) {
   if (!ep) return 'Episode '+(i+1);
-  return ep.episode||ep.eps||ep.title||ep.judul||ep.name||ep.label||('Episode '+(i+1));
+  // Pakai _label dari normalizeEpList kalau ada
+  return ep._label||ep.episode||ep.eps||ep.name||ep.title||ep.judul||ep.label||ep.no||('Episode '+(i+1));
 }
 function getSynopsis(o) {
   if (!o) return '';
@@ -35,41 +37,82 @@ function getSynopsis(o) {
 }
 function getEpisodes(o) {
   if (!o) return [];
+  // Coba semua key yang mungkin
   var e = o.episodeList||o.episodes||o.episode_list||o.listEpisode||
     o.list_episode||o.daftar_episode||o.eps||o.episodesList||
-    o.episode||o.daftarEpisode||o.listEps||[];
-  if (Array.isArray(e) && e.length > 0) return e;
-  // Cari di nested: data.episodeList, dll
+    o.episode||o.daftarEpisode||o.listEps||o.list||[];
+  if (Array.isArray(e) && e.length > 0) return normalizeEpList(e);
+  // Cari di nested object
   var nested = o.data||o.result||o.anime||o.detail||{};
   if (nested && typeof nested === 'object') {
     var e2 = nested.episodeList||nested.episodes||nested.episode_list||
       nested.listEpisode||nested.list_episode||nested.daftar_episode||
-      nested.eps||nested.episodesList||[];
-    if (Array.isArray(e2) && e2.length > 0) return e2;
+      nested.eps||nested.episodesList||nested.list||[];
+    if (Array.isArray(e2) && e2.length > 0) return normalizeEpList(e2);
   }
   return [];
 }
+
+// Normalize episode list - pastikan setiap ep punya slug & label yang benar
+function normalizeEpList(arr) {
+  return arr.map(function(ep, i) {
+    if (!ep || typeof ep !== 'object') return {slug: String(ep), label: 'Episode '+(i+1)};
+    // Ambil slug - bisa dari berbagai field
+    var slug = ep.slug||ep.episode_id||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
+    // Ambil label
+    var label = ep.episode||ep.eps||ep.name||ep.title||ep.judul||ep.label||ep.no||('Episode '+(i+1));
+    // Kalau label sama dengan title anime (animasu), pakai nomor episode
+    // Kalau slug ada prefix 'nonton-', itu slug halaman episode animasu - tetap valid
+    return Object.assign({}, ep, {_slug: slug, _label: String(label)});
+  });
+}
 function getEmbed(o) {
   if (!o) return '';
+  // Coba field langsung
   var u = o.embed||o.embedUrl||o.iframe||o.iframeUrl||o.stream_url||o.streamUrl||o.url||o.link||o.src||'';
-  if (!u && o.server) {
-    var s = Array.isArray(o.server) ? o.server[0] : o.server;
-    if (s) u = s.url||s.embed||s.iframe||s.src||s.link||'';
+  if (u) return u;
+  // Animasu: {streams: [{quality, url, ...}]}
+  if (o.streams && Array.isArray(o.streams) && o.streams.length) {
+    var s = o.streams[0];
+    u = s.url||s.embed||s.iframe||s.src||s.link||s.stream_url||'';
+    if (u) return u;
   }
-  if (!u && o.servers) {
-    var s2 = Array.isArray(o.servers) ? o.servers[0] : o.servers;
-    if (s2) u = s2.url||s2.embed||s2.iframe||s2.src||s2.link||'';
+  // server / servers array
+  if (o.server) {
+    var sv = Array.isArray(o.server) ? o.server[0] : o.server;
+    if (sv) { u = sv.url||sv.embed||sv.iframe||sv.src||sv.link||''; if (u) return u; }
   }
-  return u||'';
+  if (o.servers) {
+    var sv2 = Array.isArray(o.servers) ? o.servers[0] : o.servers;
+    if (sv2) { u = sv2.url||sv2.embed||sv2.iframe||sv2.src||sv2.link||''; if (u) return u; }
+  }
+  // mirror / links
+  if (o.mirror) {
+    var mv = Array.isArray(o.mirror) ? o.mirror[0] : o.mirror;
+    if (mv) { u = mv.url||mv.embed||mv.iframe||mv.src||''; if (u) return u; }
+  }
+  return '';
 }
+
 function getServers(o) {
   if (!o) return [];
+  var result = [];
+  // Animasu streams
+  if (o.streams && Array.isArray(o.streams)) {
+    o.streams.forEach(function(s, i) {
+      var url = s.url||s.embed||s.iframe||s.src||s.link||s.stream_url||'';
+      if (url) result.push({name: s.quality||s.name||s.server||('Stream '+(i+1)), url: url});
+    });
+  }
+  // server / servers
   var raw = o.server||o.servers||o.mirror||o.links||o.streamUrls||[];
   var arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-  return arr.map(function(s,i){
-    if (typeof s === 'string') return {name:'Server '+(i+1), url:s};
-    return { name: s.name||s.server||s.quality||('Server '+(i+1)), url: s.url||s.embed||s.iframe||s.src||s.link||'' };
-  }).filter(function(s){ return s.url; });
+  arr.forEach(function(s, i) {
+    if (typeof s === 'string') { result.push({name:'Server '+(i+1), url:s}); return; }
+    var url = s.url||s.embed||s.iframe||s.src||s.link||'';
+    if (url) result.push({name: s.name||s.server||s.quality||('Server '+(i+1)), url: url});
+  });
+  return result;
 }
 function ph() { return 'https://placehold.co/300x450/1f1f1f/444?text='; }
 
