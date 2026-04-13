@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klune Stream — Nonton Anime & Donghua Gratis</title>
+  <meta name="description" content="Klune Stream - Platform streaming anime dan donghua sub Indonesia terlengkap. Nonton gratis, kualitas HD.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+<body>
+
+  <!-- ====== NAVBAR ====== -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo" onclick="loadHomePage(); return false;">KLUNE<span>STREAM</span></a>
+
+    <ul class="nav-links">
+      <li><a href="#" data-page="home" class="active" onclick="loadHomePage(); return false;">Beranda</a></li>
+      <li><a href="#" data-page="browse" onclick="loadBrowsePage('ongoing'); return false;">Browse</a></li>
+      <li><a href="#" data-page="browse" onclick="loadDonghuaPage(); return false;">Donghua</a></li>
+      <li><a href="#" data-page="genre" onclick="loadGenrePage(); return false;">Genre</a></li>
+      <li><a href="#" data-page="schedule" onclick="loadSchedulePage(); return false;">Jadwal</a></li>
+    </ul>
+
+    <div class="nav-right">
+      <div id="nav-search-bar">
+        <span class="search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <input type="text" id="search-input" placeholder="Cari anime..." autocomplete="off">
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== SEARCH RESULTS ====== -->
+  <div id="search-results-container"></div>
+
+  <!-- ====== APP ====== -->
+  <div id="app">
+
+    <!-- ====== HOME PAGE ====== -->
+    <div id="page-home" class="page active">
+
+      <!-- Hero -->
+      <section id="hero-section" class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-gradient"></div>
+        <div class="hero-content">
+          <div class="hero-badge">⏳ Memuat...</div>
+          <h1 class="hero-title">Klune Stream</h1>
+          <p class="hero-desc">Platform streaming anime & donghua terlengkap</p>
+        </div>
+      </section>
+
+      <!-- Latest -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Episode Terbaru</h2>
+          <a class="section-link" onclick="loadBrowsePage('ongoing')">Lihat Semua →</a>
+        </div>
+        <div class="anime-row" id="latest-row">
+          <!-- loaded by JS -->
+        </div>
+      </section>
+
+      <!-- Popular -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Terpopuler</h2>
+          <a class="section-link" onclick="loadBrowsePage('popular')">Lihat Semua →</a>
+        </div>
+        <div class="anime-row" id="popular-row"></div>
+      </section>
+
+      <!-- Ongoing -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Sedang Tayang</h2>
+          <a class="section-link" onclick="loadBrowsePage('ongoing')">Lihat Semua →</a>
+        </div>
+        <div class="anime-row" id="ongoing-row"></div>
+      </section>
+
+      <!-- Donghua -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">🐉 Donghua Terbaru</h2>
+          <a class="section-link" onclick="loadDonghuaPage()">Lihat Semua →</a>
+        </div>
+        <div class="anime-row" id="donghua-row"></div>
+      </section>
+
+      <!-- Movies -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">🎬 Anime Movie</h2>
+          <a class="section-link" onclick="loadBrowsePage('movies')">Lihat Semua →</a>
+        </div>
+        <div class="anime-row" id="movie-row"></div>
+      </section>
+
+    </div>
+
+    <!-- ====== BROWSE PAGE ====== -->
+    <div id="page-browse" class="page">
+      <div style="padding: 32px 5% 0;">
+        <button class="back-btn" onclick="loadHomePage()">← Beranda</button>
+        <h1 style="font-family:var(--font-display);font-size:28px;letter-spacing:2px;margin-bottom:24px">BROWSE ANIME</h1>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="ongoing" onclick="loadBrowsePage('ongoing')">Ongoing</button>
+          <button class="tab-btn" data-tab="completed" onclick="loadBrowsePage('completed')">Completed</button>
+          <button class="tab-btn" data-tab="movies" onclick="loadBrowsePage('movies')">Movies</button>
+          <button class="tab-btn" data-tab="popular" onclick="loadBrowsePage('popular')">Popular</button>
+          <button class="tab-btn" data-tab="donghua" onclick="loadBrowsePage('donghua')">Donghua</button>
+        </div>
+
+        <div class="anime-grid" id="browse-grid">
+          <!-- loaded by JS -->
+        </div>
+
+        <div class="pagination" id="browse-pagination"></div>
+      </div>
+    </div>
+
+    <!-- ====== GENRE PAGE ====== -->
+    <div id="page-genre" class="page">
+      <div style="padding: 32px 5% 0;">
+        <button class="back-btn" onclick="loadHomePage()">← Beranda</button>
+        <h1 style="font-family:var(--font-display);font-size:28px;letter-spacing:2px;margin-bottom:8px">GENRE</h1>
+        <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px">Temukan anime berdasarkan genre favorit kamu</p>
+
+        <div class="genre-chips" id="genre-list">
+          <!-- loaded by JS -->
+        </div>
+
+        <div class="anime-grid" id="genre-anime-grid">
+          <!-- loaded by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== SCHEDULE PAGE ====== -->
+    <div id="page-schedule" class="page">
+      <div style="padding: 32px 5% 60px;">
+        <button class="back-btn" onclick="loadHomePage()">← Beranda</button>
+        <h1 style="font-family:var(--font-display);font-size:28px;letter-spacing:2px;margin-bottom:8px">JADWAL TAYANG</h1>
+        <p style="color:var(--text-muted);font-size:14px;margin-bottom:32px">Jadwal rilis anime mingguan</p>
+
+        <div id="schedule-container">
+          <!-- loaded by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== DETAIL PAGE ====== -->
+    <div id="page-detail" class="page">
+      <div id="detail-container">
+        <!-- loaded by JS -->
+      </div>
+    </div>
+
+    <!-- ====== WATCH PAGE ====== -->
+    <div id="page-watch" class="page">
+      <div id="watch-container">
+        <!-- loaded by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== FOOTER ====== -->
+  <footer>
+    <div class="footer-content">
+      <div>
+        <div class="footer-logo">KLUNE<span style="color:var(--text-primary)">STREAM</span></div>
+        <p class="footer-desc">Platform streaming anime dan donghua terlengkap dengan subtitle Indonesia. Nonton gratis tanpa batas.</p>
+      </div>
+      <div>
+        <div class="footer-heading">Navigasi</div>
+        <ul class="footer-links">
+          <li><a onclick="loadHomePage()">Beranda</a></li>
+          <li><a onclick="loadBrowsePage('ongoing')">Ongoing</a></li>
+          <li><a onclick="loadBrowsePage('completed')">Completed</a></li>
+          <li><a onclick="loadBrowsePage('movies')">Movies</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-heading">Kategori</div>
+        <ul class="footer-links">
+          <li><a onclick="loadDonghuaPage()">Donghua</a></li>
+          <li><a onclick="loadGenrePage()">Genre</a></li>
+          <li><a onclick="loadSchedulePage()">Jadwal</a></li>
+          <li><a onclick="loadBrowsePage('popular')">Terpopuler</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-heading">Info</div>
+        <ul class="footer-links">
+          <li><a href="#">Tentang Kami</a></li>
+          <li><a href="#">Kontak</a></li>
+          <li><a href="#">FAQ</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Klune Stream. All rights reserved.</span>
+      <span style="color:var(--text-muted)">Powered by sankavollerei.com</span>
+    </div>
+  </footer>
+
+  <!-- ====== SCRIPTS ====== -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
