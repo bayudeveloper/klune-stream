@@ -459,6 +459,7 @@ async function openDetail(slug, seedItem) {
     var merged = Object.assign({}, seedItem || {}, data || {});
     _renderDetail(merged, slug, container);
   } catch(e) {
+    if (typeof reportError === 'function') reportError('openDetail slug=' + slug, e.message, e.stack);
     if (!seedItem) {
       container.innerHTML = '<div class="error-message" style="padding:80px">' +
         '<h3>Gagal memuat detail</h3><p>' + e.message + '</p>' +
@@ -614,6 +615,7 @@ async function openWatch(slug, label, animeTitle, epIdx) {
       serversHtml + epsHtml +
       '</div>';
   } catch(e) {
+    if (typeof reportError === 'function') reportError('openWatch slug=' + slug, e.message, e.stack);
     container.innerHTML = '<div class="error-message" style="padding:80px">' +
       '<h3>Gagal memuat video</h3><p>' + escHtml(e.message) + '</p>' +
       '<button class="btn-secondary" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
