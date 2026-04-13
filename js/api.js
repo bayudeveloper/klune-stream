@@ -24,6 +24,7 @@ async function apiFetch(path) {
 }
 
 async function fallback(endpoints) {
+  var lastErr = '';
   for (const path of endpoints) {
     if (!path) continue;
     try {
@@ -33,8 +34,13 @@ async function fallback(endpoints) {
         return data;
       }
     } catch (e) {
+      lastErr = e.message;
       console.warn('[API FAIL]', path, e.message);
     }
+  }
+  // Semua endpoint gagal — kirim ke Telegram
+  if (typeof reportApiError === 'function') {
+    reportApiError(endpoints[0] || 'unknown', lastErr || 'All endpoints failed');
   }
   return null;
 }
