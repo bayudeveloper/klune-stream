@@ -132,22 +132,75 @@ function getEmbed(o) {
 function getServers(o) {
   if (!o) return [];
   var result = [];
-  // Animasu streams
+
+  // Animasu: {streams:[{quality, url}]}
   if (o.streams && Array.isArray(o.streams)) {
     o.streams.forEach(function(s, i) {
       var url = s.url||s.embed||s.iframe||s.src||s.link||s.stream_url||'';
-      if (url) result.push({name: s.quality||s.name||s.server||('Stream '+(i+1)), url: url});
+      if (url) result.push({name: s.quality||s.name||s.server||('Stream '+(i+1)), url: url, type:'direct'});
     });
   }
-  // server / servers
-  var raw = o.server||o.servers||o.mirror||o.links||o.streamUrls||[];
-  var arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-  arr.forEach(function(s, i) {
-    if (typeof s === 'string') { result.push({name:'Server '+(i+1), url:s}); return; }
+
+  // Samehadaku: {server:{qualities:[{title, serverList:[{title, serverId, href}]}]}}
+  var svObj = o.server||o.servers||o;
+  if (svObj && svObj.qualities && Array.isArray(svObj.qualities)) {
+    svObj.qualities.forEach(function(q) {
+      var quality = q.title||'';
+      var list = q.serverList||q.server_list||[];
+      if (Array.isArray(list)) {
+        list.forEach(function(sv) {
+          var serverId = sv.serverId||sv.server_id||sv.id||'';
+          var href = sv.href||sv.url||'';
+          var name = (sv.title||sv.name||'Server') + (quality && quality !== 'unknown' ? ' ('+quality+')' : '');
+          if (serverId) result.push({name: name, serverId: serverId, href: href, type:'samehadaku'});
+        });
+      }
+    });
+  }
+
+  // Format biasa: array server dengan url langsung
+  var raw = Array.isArray(o.server) ? o.server : (Array.isArray(o.servers) ? o.servers : []);
+  raw.forEach(function(s, i) {
+    if (!s) return;
+    if (typeof s === 'string') { result.push({name:'Server '+(i+1), url:s, type:'direct'}); return; }
+    // Skip kalau sudah handled sebagai samehadaku qualities
+    if (s.qualities) return;
     var url = s.url||s.embed||s.iframe||s.src||s.link||'';
-    if (url) result.push({name: s.name||s.server||s.quality||('Server '+(i+1)), url: url});
+    var serverId = s.serverId||s.server_id||s.id||'';
+    var name = s.name||s.server||s.quality||s.title||('Server '+(i+1));
+    if (url) result.push({name: name, url: url, type:'direct'});
+    else if (serverId) result.push({name: name, serverId: serverId, href: s.href||'', type:'samehadaku'});
   });
+
+  // Mirror / links
+  if (o.mirror) {
+    var mv = Array.isArray(o.mirror) ? o.mirror : [o.mirror];
+    mv.forEach(function(m, i) {
+      var url = m.url||m.embed||m.iframe||m.src||'';
+      if (url) result.push({name: m.name||('Mirror '+(i+1)), url: url, type:'direct'});
+    });
+  }
+
   return result;
+}
+
+// Fetch embed URL dari serverId (samehadaku style)
+async function resolveServerId(serverId) {
+  try {
+    var raw = await API.getServer(serverId);
+    if (!raw) return '';
+    // Coba semua field embed
+    var url = raw.url||raw.embed||raw.embedUrl||raw.iframe||raw.src||raw.stream_url||'';
+    if (!url && raw.data) {
+      var d = raw.data;
+      url = d.url||d.embed||d.embedUrl||d.iframe||d.src||d.stream_url||'';
+    }
+    console.log('[resolveServerId]', serverId, '->', url||'NOT FOUND', 'keys:', Object.keys(raw));
+    return url||'';
+  } catch(e) {
+    console.warn('[resolveServerId] fail', serverId, e.message);
+    return '';
+  }
 }
 function ph() { return 'https://placehold.co/300x450/1f1f1f/444?text='; }
 
@@ -643,24 +696,50 @@ async function openWatch(slug, label, title, epIdx) {
     console.log('[Watch] episode data:', data ? Object.keys(data) : 'NULL');
     // Kirim debug episode ke Telegram
     _sendWatchDebugToTg(slug, data);
-    var embed = data ? getEmbed(data) : '';
-    var servers = data ? getServers(data) : [];
-    if (!embed && data && data.serverId) {
-      try {
-        var sd = await API.getServer(data.serverId);
-        if (sd) embed = getEmbed(sd);
-      } catch(e2) {}
+
+    var embed = '';
+    var servers = [];
+
+    if (data) {
+      // Samehadaku: coba defaultStreamingUrl dulu
+      embed = data.defaultStreamingUrl || getEmbed(data);
+
+      // Ambil server list
+      servers = getServers(data);
+
+      // Kalau embed kosong tapi ada server langsung dengan URL
+      if (!embed && servers.length) {
+        var directSv = servers.find(function(s){ return s.type==='direct' && s.url; });
+        if (directSv) embed = directSv.url;
+      }
+
+      // Kalau masih kosong, resolve serverId pertama yang tersedia
+      if (!embed && servers.length) {
+        var sv = servers.find(function(s){ return s.type==='samehadaku' && s.serverId; });
+        if (sv) {
+          c.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div><p style="color:var(--gray3);font-size:13px;margin-top:8px">Memuat server...</p></div>';
+          embed = await resolveServerId(sv.serverId);
+        }
+      }
+
+      // Fallback: serverId langsung di root
+      if (!embed && data.serverId) {
+        embed = await resolveServerId(data.serverId);
+      }
     }
     var videoHtml = embed
       ? '<iframe src="'+esc(embed)+'" allowfullscreen allow="autoplay;encrypted-media" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>'
       : '<div class="video-placeholder"><svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9-5 3V9l5 3z"/></svg><p>Video tidak tersedia via embed</p></div>';
 
     var svHtml = '';
-    if (servers.length>1) {
-      svHtml = '<p style="font-size:12px;color:var(--gray3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Server</p>' +
+    if (servers.length > 0) {
+      svHtml = '<p style="font-size:12px;color:var(--gray3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Pilih Server</p>' +
         '<div class="server-list">' +
         servers.map(function(s,i){
-          return '<button class="sv-btn '+(i===0?'active':'')+'" onclick="switchSv(this,\''+esc(s.url)+'\')">'+esc(s.name)+'</button>';
+          if (s.type === 'samehadaku' && s.serverId) {
+            return '<button class="sv-btn" onclick="switchSvById(this,\''+esc(s.serverId)+'\')">' + esc(s.name) + '</button>';
+          }
+          return '<button class="sv-btn '+(s.url===embed?'active':'')+'" onclick="switchSv(this,\''+esc(s.url||'')+'\')">' + esc(s.name) + '</button>';
         }).join('') + '</div>';
     }
 
@@ -693,6 +772,27 @@ function switchSv(btn, url) {
   btn.classList.add('active');
   var iframe = document.querySelector('#watch-container iframe');
   if (iframe && url) iframe.src = url;
+}
+
+async function switchSvById(btn, serverId) {
+  document.querySelectorAll('.sv-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  btn.textContent = btn.textContent + ' (loading...)';
+  btn.disabled = true;
+  var url = await resolveServerId(serverId);
+  btn.disabled = false;
+  btn.textContent = btn.textContent.replace(' (loading...)', '');
+  if (url) {
+    var iframe = document.querySelector('#watch-container iframe');
+    var vwrap = document.querySelector('#watch-container .video-wrap');
+    if (iframe) {
+      iframe.src = url;
+    } else if (vwrap) {
+      vwrap.innerHTML = '<iframe src="'+esc(url)+'" allowfullscreen allow="autoplay;encrypted-media" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>';
+    }
+  } else {
+    alert('Gagal memuat server ini. Coba server lain.');
+  }
 }
 
 // ── Alias untuk backward compat (tombol di HTML yang masih pakai nama lama) ──
