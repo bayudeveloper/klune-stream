@@ -1,6 +1,5 @@
 // ============================================
-// KLUNE STREAM - API Configuration & Fallback
-// Base URL: https://www.sankavollerei.com
+// KLUNE STREAM - API v2
 // ============================================
 
 const BASE = 'https://www.sankavollerei.com';
@@ -38,11 +37,36 @@ async function fallback(endpoints) {
       console.warn('[API FAIL]', path, e.message);
     }
   }
-  // Semua endpoint gagal — kirim ke Telegram
   if (typeof reportApiError === 'function') {
     reportApiError(endpoints[0] || 'unknown', lastErr || 'All endpoints failed');
   }
   return null;
+}
+
+// Normalisasi slug — buang prefix path kalau sudah ada
+function cleanSlug(slug) {
+  if (!slug) return '';
+  // Kalau slug adalah full URL, ambil bagian terakhir
+  if (slug.startsWith('http')) {
+    try { slug = new URL(slug).pathname; } catch(e) {}
+  }
+  // Buang leading slash
+  slug = slug.replace(/^\/+/, '');
+  // Buang prefix yang umum dari berbagai source
+  const prefixes = [
+    'anime/episode/', 'anime/anime/', 'anime/samehadaku/episode/',
+    'anime/samehadaku/anime/', 'anime/animasu/episode/', 'anime/animasu/detail/',
+    'anime/animekuindo/episode/', 'anime/animekuindo/detail/',
+    'anime/stream/episode/', 'anime/stream/anime/',
+    'anime/animesail/episode/', 'anime/animesail/detail/',
+    'anime/oploverz/episode/', 'anime/oploverz/anime/',
+    'anime/anoboy/episode/', 'anime/anoboy/anime/',
+    'anime/nimegami/episode/', 'anime/nimegami/detail/',
+  ];
+  for (const p of prefixes) {
+    if (slug.startsWith(p)) { slug = slug.slice(p.length); break; }
+  }
+  return slug;
 }
 
 function toList(raw) {
@@ -73,40 +97,6 @@ function toDetail(raw) {
   return raw;
 }
 
-function pick(obj) {
-  const keys = Array.prototype.slice.call(arguments, 1);
-  for (const k of keys) {
-    if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
-  }
-  return null;
-}
-
-function normalizeItem(item) {
-  if (!item || typeof item !== 'object') return null;
-  return {
-    _raw: item,
-    title: pick(item,'title','judul','name','anime_title','animeTitle','romaji','english','native') || 'Unknown',
-    slug: pick(item,'slug','animeId','anime_id','id','url','link','endpoint','href','path') || '',
-    image: pick(item,'poster','image','img','thumb','thumbnail','cover','foto','banner','coverImage','poster_url','image_url') || '',
-    score: pick(item,'score','rating','nilai','rate','mal_score') || '',
-    status: pick(item,'status','tipe_status','airing_status') || '',
-    type: pick(item,'type','tipe','format') || '',
-    totalEpisode: pick(item,'total_episode','episodes','episode_count','totalEpisode','jumlah_episode','eps','total_eps') || '',
-    synopsis: pick(item,'synopsis','sinopsis','description','deskripsi','overview','plot','summary') || '',
-    genres: (function() {
-      const g = pick(item,'genres','genre','genreList','genre_list','tags');
-      if (!g) return [];
-      if (Array.isArray(g)) return g.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.genre || x.slug || '')); });
-      if (typeof g === 'string') return g.split(',').map(function(s){ return s.trim(); });
-      return [];
-    })(),
-    episodes: (function() {
-      const e = pick(item,'episodeList','episodes','episode_list','listEpisode','list_episode','eps','daftar_episode','episode');
-      return Array.isArray(e) ? e : [];
-    })(),
-  };
-}
-
 const API = {
   async getLatest(page) {
     page = page || 1;
@@ -117,7 +107,6 @@ const API = {
       '/anime/animekuindo/latest?page=' + page,
       '/anime/animesail/terbaru?page=' + page,
       '/anime/oploverz/home?page=' + page,
-      '/anime/anoboy/home?page=' + page,
       '/anime/home',
     ]);
     return toList(raw);
@@ -201,7 +190,6 @@ const API = {
       '/anime/samehadaku/genres',
       '/anime/animasu/genres',
       '/anime/animekuindo/genres',
-      '/anime/kura/properties/genre',
       '/anime/stream/genres',
     ]);
     return toList(raw);
@@ -225,6 +213,7 @@ const API = {
   },
 
   async getDetail(slug) {
+    slug = cleanSlug(slug);
     const raw = await fallback([
       '/anime/anime/' + slug,
       '/anime/samehadaku/anime/' + slug,
@@ -240,6 +229,7 @@ const API = {
   },
 
   async getEpisode(slug) {
+    slug = cleanSlug(slug);
     const raw = await fallback([
       '/anime/episode/' + slug,
       '/anime/samehadaku/episode/' + slug,
@@ -275,6 +265,6 @@ const API = {
 };
 
 window.API = API;
-window.normalizeItem = normalizeItem;
+window.cleanSlug = cleanSlug;
 window.toList = toList;
 window.toDetail = toDetail;
