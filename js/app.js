@@ -35,8 +35,19 @@ function getSynopsis(o) {
 }
 function getEpisodes(o) {
   if (!o) return [];
-  var e = o.episodeList||o.episodes||o.episode_list||o.listEpisode||o.list_episode||o.daftar_episode||o.eps||[];
-  return Array.isArray(e) ? e : [];
+  var e = o.episodeList||o.episodes||o.episode_list||o.listEpisode||
+    o.list_episode||o.daftar_episode||o.eps||o.episodesList||
+    o.episode||o.daftarEpisode||o.listEps||[];
+  if (Array.isArray(e) && e.length > 0) return e;
+  // Cari di nested: data.episodeList, dll
+  var nested = o.data||o.result||o.anime||o.detail||{};
+  if (nested && typeof nested === 'object') {
+    var e2 = nested.episodeList||nested.episodes||nested.episode_list||
+      nested.listEpisode||nested.list_episode||nested.daftar_episode||
+      nested.eps||nested.episodesList||[];
+    if (Array.isArray(e2) && e2.length > 0) return e2;
+  }
+  return [];
 }
 function getEmbed(o) {
   if (!o) return '';
