@@ -353,13 +353,19 @@ async function _sendEpisodeDebugToTg(slug, data, eps) {
     var keys = Object.keys(data||{});
     var epsKeys = [];
     if (eps && eps[0]) epsKeys = Object.keys(eps[0]);
-    var msg = '🔍 <b>Detail Debug</b>\n\n' +
+    // Cek nilai dari setiap key yang mungkin berisi episodes
+  var epKeyValues = {};
+  ['episodeList','episodes','episode_list','listEpisode','list_episode',
+   'daftar_episode','eps','episodesList','episode','list','items'].forEach(function(k){
+    if (data[k] !== undefined) epKeyValues[k] = Array.isArray(data[k]) ? '[Array:'+data[k].length+']' : typeof data[k];
+  });
+  var msg = '🔍 <b>Detail Debug</b>\n\n' +
       '📌 <b>Slug:</b> <code>'+slug+'</code>\n' +
       '🗝 <b>Keys ('+keys.length+'):</b> <code>'+keys.join(', ')+'</code>\n' +
       '🎬 <b>Episode ditemukan:</b> '+eps.length+'\n' +
+      '🔑 <b>Nilai ep keys:</b> <code>'+JSON.stringify(epKeyValues)+'</code>\n' +
       (eps.length===0 ?
-        '⚠️ <b>Episode keys yg dicek:</b> episodeList, episodes, episode_list, listEpisode, list_episode, daftar_episode, eps, episodesList, episode\n' +
-        '📦 <b>Sample data:</b>\n<code>'+JSON.stringify(data, null, 2).slice(0, 800)+'</code>'
+        '📦 <b>Sample data:</b>\n<code>'+JSON.stringify(data, null, 2).slice(0, 600)+'</code>'
         :
         '✅ <b>Sample ep[0] keys:</b> <code>'+epsKeys.join(', ')+'</code>\n' +
         '📝 <b>ep[0]:</b> <code>'+JSON.stringify(eps[0]).slice(0,300)+'</code>'
@@ -649,7 +655,10 @@ function _renderDetail(data, slug, c) {
         return '<button class="ep-btn" onclick="openWatchEp('+i+')">'+esc(getEpLabel(ep,i))+'</button>';
       }).join('') + '</div>';
   } else {
-    epsHtml = '<div class="err"><p>Daftar episode tidak tersedia dari sumber ini.</p></div>';
+    epsHtml = '<div class="err" style="padding:24px 0">' +
+      '<p style="color:var(--gray3)">Daftar episode tidak tersedia dari sumber ini.</p>' +
+      '<p style="font-size:12px;color:var(--gray4);margin-top:6px">Coba cari judul anime dengan kata kunci berbeda.</p>' +
+      '</div>';
   }
 
   c.innerHTML =
