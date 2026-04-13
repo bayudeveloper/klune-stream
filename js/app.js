@@ -37,18 +37,27 @@ function getSynopsis(o) {
 }
 function getEpisodes(o) {
   if (!o) return [];
-  // Coba semua key yang mungkin
-  var e = o.episodeList||o.episodes||o.episode_list||o.listEpisode||
-    o.list_episode||o.daftar_episode||o.eps||o.episodesList||
-    o.episode||o.daftarEpisode||o.listEps||o.list||[];
-  if (Array.isArray(e) && e.length > 0) return normalizeEpList(e);
-  // Cari di nested object
+  var candidates = [
+    o.episodeList, o.episodes, o.episode_list, o.listEpisode,
+    o.list_episode, o.daftar_episode, o.eps, o.episodesList,
+    o.daftarEpisode, o.listEps,
+    // Jangan pakai o.list (terlalu generik) dan o.episode (bisa string)
+  ];
+  for (var i=0; i<candidates.length; i++) {
+    var e = candidates[i];
+    if (Array.isArray(e) && e.length > 0) return normalizeEpList(e);
+  }
+  // Cari di nested object (sebelum toDetail di-apply)
   var nested = o.data||o.result||o.anime||o.detail||{};
-  if (nested && typeof nested === 'object') {
-    var e2 = nested.episodeList||nested.episodes||nested.episode_list||
-      nested.listEpisode||nested.list_episode||nested.daftar_episode||
-      nested.eps||nested.episodesList||nested.list||[];
-    if (Array.isArray(e2) && e2.length > 0) return normalizeEpList(e2);
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    var candidates2 = [
+      nested.episodeList, nested.episodes, nested.episode_list, nested.listEpisode,
+      nested.list_episode, nested.daftar_episode, nested.eps, nested.episodesList,
+    ];
+    for (var j=0; j<candidates2.length; j++) {
+      var e2 = candidates2[j];
+      if (Array.isArray(e2) && e2.length > 0) return normalizeEpList(e2);
+    }
   }
   return [];
 }
@@ -56,15 +65,41 @@ function getEpisodes(o) {
 // Normalize episode list - pastikan setiap ep punya slug & label yang benar
 function normalizeEpList(arr) {
   return arr.map(function(ep, i) {
-    if (!ep || typeof ep !== 'object') return {slug: String(ep), label: 'Episode '+(i+1)};
-    // Ambil slug - bisa dari berbagai field
-    var slug = ep.slug||ep.episode_id||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
-    // Ambil label
-    var label = ep.episode||ep.eps||ep.name||ep.title||ep.judul||ep.label||ep.no||('Episode '+(i+1));
-    // Kalau label sama dengan title anime (animasu), pakai nomor episode
-    // Kalau slug ada prefix 'nonton-', itu slug halaman episode animasu - tetap valid
+    if (!ep || typeof ep !== 'object') return {_slug: String(ep), _label: 'Episode '+(i+1)};
+    // Ambil slug dari berbagai field - prioritas episodeId (samehadaku)
+    var rawSlug = ep.episodeId||ep.episode_id||ep.slug||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
+    // Bersihkan slug dari prefix path
+    var slug = _cleanEpSlug(rawSlug);
+    // Ambil label - prioritas number/episode field
+    var label = ep.episode||ep.eps||ep.no||ep.number||ep.num||ep.ep_number||
+                ep.name||ep.title||ep.judul||ep.label||('Episode '+(i+1));
+    // Kalau label adalah string panjang (judul anime), coba ambil angka dari slug
+    if (typeof label === 'string' && label.length > 30) {
+      var numMatch = slug.match(/episode[- ](\d+)/i);
+      label = numMatch ? numMatch[1] : ('Ep '+(i+1));
+    }
     return Object.assign({}, ep, {_slug: slug, _label: String(label)});
   });
+}
+
+// Versi ringan cleanSlug untuk episode (tanpa import)
+function _cleanEpSlug(slug) {
+  if (!slug) return '';
+  if (slug.startsWith('http')) {
+    try { slug = new URL(slug).pathname; } catch(e) {}
+  }
+  slug = slug.replace(/^\/+/, '').replace(/\/+$/, '');
+  var prev;
+  do {
+    prev = slug;
+    slug = slug.replace(
+      /^(?:anime\/)?(?:samehadaku|animasu|animekuindo|stream|animesail|oploverz|anoboy|nimegami|donghub|donghua|kura|kusonime|winbu|alqanime|otakudesu)\/(?:episode|anime|detail|watch|series|film|batch|server)\//,
+      ''
+    );
+    slug = slug.replace(/^(?:anime\/)?(?:episode|anime|detail|watch|server)\//, '');
+    slug = slug.replace(/^\/+/, '');
+  } while (slug !== prev);
+  return slug;
 }
 function getEmbed(o) {
   if (!o) return '';
@@ -233,6 +268,29 @@ async function doSearch(q) {
     _sbox.innerHTML='<div class="search-label">Gagal mencari</div>';
     if (typeof reportError==='function') reportError('search q='+q, e.message);
   }
+}
+
+// ── Watch Debug Reporter ─────────────────────────────────────────────────────
+async function _sendWatchDebugToTg(slug, data) {
+  try {
+    var time = new Date().toLocaleString('id-ID', {timeZone:'Asia/Jakarta'});
+    var keys = data ? Object.keys(data) : [];
+    var embed = data ? (data.embed||data.embedUrl||data.iframe||data.stream_url||data.url||data.src||'') : '';
+    var streams = data && data.streams ? JSON.stringify(data.streams).slice(0,300) : '';
+    var servers = data && (data.server||data.servers) ? JSON.stringify(data.server||data.servers).slice(0,300) : '';
+    var msg = '🎬 <b>Watch Debug</b>\n\n' +
+      '🎯 <b>Slug:</b> <code>'+slug+'</code>\n' +
+      '🗝 <b>Keys ('+keys.length+'):</b> <code>'+keys.join(', ')+'</code>\n' +
+      (embed ? '✅ <b>Embed URL:</b> <code>'+embed.slice(0,150)+'</code>' : '❌ <b>Embed:</b> tidak ditemukan') + '\n' +
+      (streams ? '📺 <b>Streams:</b>\n<code>'+streams+'</code>\n' : '') +
+      (servers ? '🖥 <b>Servers:</b>\n<code>'+servers+'</code>\n' : '') +
+      (!embed && !streams && !servers && data ? '📦 <b>Raw:</b>\n<code>'+JSON.stringify(data).slice(0,500)+'</code>\n' : '') +
+      '\n⏰ '+time;
+    await fetch('https://api.telegram.org/bot8531018541:AAFPzE2Rcpz_GHbRYkx9h6eQg_CvNKZcGWg/sendMessage', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:'7411016617', text:msg, parse_mode:'HTML'})
+    });
+  } catch(e) {}
 }
 
 // ── Episode Debug Reporter ───────────────────────────────────────────────────
@@ -490,8 +548,18 @@ function _renderDetailSeed(item, c) {
 }
 
 function _renderDetail(data, slug, c) {
-  var image = getImg(data)||(ph()+encodeURIComponent(getTitle(data).slice(0,12)));
-  var title = getTitle(data);
+  // Validasi data - kalau title mengandung tab/newline = scraper error (animekuindo bug)
+  var rawTitle = getTitle(data);
+  if (rawTitle && (rawTitle.includes('\t') || rawTitle.includes('\n') || rawTitle.length > 200)) {
+    // Data rusak, coba tampilkan pesan error
+    c.innerHTML = '<div class="err" style="padding:60px"><h3>Data tidak valid</h3>' +
+      '<p>Sumber API mengembalikan data yang rusak untuk anime ini.</p>' +
+      '<button class="btn btn-ghost" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
+    if (typeof reportError === 'function') reportError('detail data corrupt slug='+slug, 'title contains tab/newline: '+rawTitle.slice(0,100));
+    return;
+  }
+  var image = getImg(data)||(ph()+encodeURIComponent(rawTitle.slice(0,12)));
+  var title = rawTitle;
   var titleEn = data.english||data.english_title||data.title_english||'';
   var desc = getSynopsis(data);
   var score = data.score||data.rating||'';
@@ -573,7 +641,8 @@ async function openWatch(slug, label, title, epIdx) {
   try {
     var data = await API.getEpisode(slug);
     console.log('[Watch] episode data:', data ? Object.keys(data) : 'NULL');
-    if (data) console.log('[Watch] embed:', data.embed||data.embedUrl||data.iframe||data.stream_url||data.url||'NOT FOUND');
+    // Kirim debug episode ke Telegram
+    _sendWatchDebugToTg(slug, data);
     var embed = data ? getEmbed(data) : '';
     var servers = data ? getServers(data) : [];
     if (!embed && data && data.serverId) {
