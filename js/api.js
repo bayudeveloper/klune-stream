@@ -4,426 +4,271 @@
 // ============================================
 
 const BASE = 'https://www.sankavollerei.com';
+const CACHE = new Map();
+const CACHE_TTL = 5 * 60 * 1000;
 
-// All available anime sources with priority order
-const ANIME_SOURCES = {
-  otakudesu: {
-    name: 'Otakudesu',
-    home: '/anime/home',
-    schedule: '/anime/schedule',
-    detail: (slug) => `/anime/anime/${slug}`,
-    ongoing: '/anime/ongoing-anime',
-    completed: '/anime/complete-anime',
-    genres: '/anime/genre',
-    genreDetail: (slug) => `/anime/genre/${slug}`,
-    episode: (slug) => `/anime/episode/${slug}`,
-    search: (q) => `/anime/search/${q}`,
-    batch: (slug) => `/anime/batch/${slug}`,
-    server: (id) => `/anime/server/${id}`,
-    unlimited: '/anime/unlimited',
-  },
-  samehadaku: {
-    name: 'Samehadaku',
-    home: '/anime/samehadaku/home',
-    recent: '/anime/samehadaku/recent',
-    ongoing: '/anime/samehadaku/ongoing',
-    completed: '/anime/samehadaku/completed',
-    popular: '/anime/samehadaku/popular',
-    movies: '/anime/samehadaku/movies',
-    list: '/anime/samehadaku/list',
-    genres: '/anime/samehadaku/genres',
-    genreDetail: (id) => `/anime/samehadaku/genres/${id}`,
-    detail: (id) => `/anime/samehadaku/anime/${id}`,
-    episode: (id) => `/anime/samehadaku/episode/${id}`,
-    batch: '/anime/samehadaku/batch',
-    batchDetail: (id) => `/anime/samehadaku/batch/${id}`,
-    schedule: '/anime/samehadaku/schedule',
-    server: (id) => `/anime/samehadaku/server/${id}`,
-  },
-  animasu: {
-    name: 'Animasu',
-    home: '/anime/animasu/home',
-    popular: '/anime/animasu/popular',
-    movies: '/anime/animasu/movies',
-    ongoing: '/anime/animasu/ongoing',
-    completed: '/anime/animasu/completed',
-    latest: '/anime/animasu/latest',
-    search: (q) => `/anime/animasu/search/${q}`,
-    animelist: '/anime/animasu/animelist',
-    advancedSearch: '/anime/animasu/advanced-search',
-    genres: '/anime/animasu/genres',
-    genreDetail: (slug) => `/anime/animasu/genre/${slug}`,
-    characters: '/anime/animasu/characters',
-    characterDetail: (slug) => `/anime/animasu/character/${slug}`,
-    schedule: '/anime/animasu/schedule',
-    detail: (slug) => `/anime/animasu/detail/${slug}`,
-    episode: (slug) => `/anime/animasu/episode/${slug}`,
-  },
-  animekuindo: {
-    name: 'Animekuindo',
-    home: '/anime/animekuindo/home',
-    schedule: '/anime/animekuindo/schedule',
-    latest: '/anime/animekuindo/latest',
-    popular: '/anime/animekuindo/popular',
-    movie: '/anime/animekuindo/movie',
-    search: (q) => `/anime/animekuindo/search/${q}`,
-    genres: '/anime/animekuindo/genres',
-    genreDetail: (slug) => `/anime/animekuindo/genres/${slug}`,
-    seasons: '/anime/animekuindo/seasons',
-    seasonDetail: (slug) => `/anime/animekuindo/seasons/${slug}`,
-    detail: (slug) => `/anime/animekuindo/detail/${slug}`,
-    episode: (slug) => `/anime/animekuindo/episode/${slug}`,
-  },
-  nimegami: {
-    name: 'Nimegami',
-    home: '/anime/nimegami/home',
-    search: (q) => `/anime/nimegami/search/${q}`,
-    detail: (slug) => `/anime/nimegami/detail/${slug}`,
-    animeList: '/anime/nimegami/anime-list',
-    genreList: '/anime/nimegami/genre/list',
-    genreDetail: (slug) => `/anime/nimegami/genre/${slug}`,
-    seasonList: '/anime/nimegami/seasons/list',
-    seasonDetail: (slug) => `/anime/nimegami/seasons/${slug}`,
-    typeList: '/anime/nimegami/type/list',
-    typeDetail: (slug) => `/anime/nimegami/type/${slug}`,
-    jdrama: '/anime/nimegami/j-drama',
-    liveAction: '/anime/nimegami/live-action',
-    liveActionDetail: (slug) => `/anime/nimegami/live-action/${slug}`,
-    dramaDetail: (slug) => `/anime/nimegami/drama/${slug}`,
-  },
-  stream: {
-    name: 'Stream',
-    latest: (page = 1) => `/anime/stream/latest/${page}`,
-    popular: '/anime/stream/popular',
-    search: (q) => `/anime/stream/search/${q}`,
-    detail: (slug) => `/anime/stream/anime/${slug}`,
-    episode: (slug) => `/anime/stream/episode/${slug}`,
-    movie: (page = 1) => `/anime/stream/movie/${page}`,
-    list: '/anime/stream/list',
-    genres: '/anime/stream/genres',
-    genreDetail: (slug, page = 1) => `/anime/stream/genres/${slug}/${page}`,
-  },
-  oploverz: {
-    name: 'Oploverz',
-    home: '/anime/oploverz/home',
-    schedule: '/anime/oploverz/schedule',
-    ongoing: '/anime/oploverz/ongoing',
-    completed: '/anime/oploverz/completed',
-    list: '/anime/oploverz/list',
-    search: (q) => `/anime/oploverz/search/${q}`,
-    detail: (slug) => `/anime/oploverz/anime/${slug}`,
-    episode: (slug) => `/anime/oploverz/episode/${slug}`,
-  },
-  anoboy: {
-    name: 'Anoboy',
-    home: '/anime/anoboy/home',
-    search: (q) => `/anime/anoboy/search/${q}`,
-    detail: (slug) => `/anime/anoboy/anime/${slug}`,
-    episode: (slug) => `/anime/anoboy/episode/${slug}`,
-    azList: '/anime/anoboy/az-list',
-    list: '/anime/anoboy/list',
-    genreDetail: (slug) => `/anime/anoboy/genre/${slug}`,
-    genres: '/anime/anoboy/genres',
-  },
-  animesail: {
-    name: 'AnimeSail',
-    home: '/anime/animesail/home',
-    terbaru: '/anime/animesail/terbaru',
-    donghua: '/anime/animesail/donghua',
-    movie: '/anime/animesail/movie',
-    schedule: '/anime/animesail/schedule',
-    list: '/anime/animesail/list',
-    search: (q) => `/anime/animesail/search/${q}`,
-    genres: '/anime/animesail/genres',
-    genreDetail: (slug) => `/anime/animesail/genre/${slug}`,
-    seasonDetail: (slug) => `/anime/animesail/season/${slug}`,
-    studioDetail: (slug) => `/anime/animesail/studio/${slug}`,
-    detail: (slug) => `/anime/animesail/detail/${slug}`,
-    episode: (slug) => `/anime/animesail/episode/${slug}`,
-  },
-  kuramanime: {
-    name: 'Kuramanime',
-    home: '/anime/kura/home',
-    search: (q) => `/anime/kura/search/${q}`,
-    detail: (id, slug) => `/anime/kura/anime/${id}/${slug}`,
-    watch: (id, slug, ep) => `/anime/kura/watch/${id}/${slug}/${ep}`,
-    batch: (id, slug, batchId) => `/anime/kura/batch/${id}/${slug}/${batchId}`,
-    animeList: '/anime/kura/anime-list',
-    schedule: '/anime/kura/schedule',
-    popular: '/anime/kura/quick/popular',
-    ongoing: '/anime/kura/quick/ongoing',
-    finished: '/anime/kura/quick/finished',
-    movie: '/anime/kura/quick/movie',
-    donghua: '/anime/kura/quick/donghua',
-    genreList: '/anime/kura/properties/genre',
-    genreDetail: (slug) => `/anime/kura/properties/genre/${slug}`,
-    seasonList: '/anime/kura/properties/season',
-    seasonDetail: (slug) => `/anime/kura/properties/season/${slug}`,
-    studioList: '/anime/kura/properties/studio',
-    studioDetail: (slug) => `/anime/kura/properties/studio/${slug}`,
-    typeList: '/anime/kura/properties/type',
-    typeDetail: (slug) => `/anime/kura/properties/type/${slug}`,
-    qualityList: '/anime/kura/properties/quality',
-    qualityDetail: (slug) => `/anime/kura/properties/quality/${slug}`,
-    sourceList: '/anime/kura/properties/source',
-    sourceDetail: (slug) => `/anime/kura/properties/source/${slug}`,
-    countryList: '/anime/kura/properties/country',
-    countryDetail: (slug) => `/anime/kura/properties/country/${slug}`,
-  },
-  kusonime: {
-    name: 'Kusonime',
-    latest: '/anime/kusonime/latest',
-    allAnime: '/anime/kusonime/all-anime',
-    movie: '/anime/kusonime/movie',
-    typeDetail: (type) => `/anime/kusonime/type/${type}`,
-    allGenres: '/anime/kusonime/all-genres',
-    allSeasons: '/anime/kusonime/all-seasons',
-    search: (q) => `/anime/kusonime/search/${q}`,
-    genreDetail: (slug) => `/anime/kusonime/genre/${slug}`,
-    seasonDetail: (season, year) => `/anime/kusonime/season/${season}/${year}`,
-    detail: (slug) => `/anime/kusonime/detail/${slug}`,
-  },
-  donghub: {
-    name: 'Donghub',
-    home: '/anime/donghub/home',
-    latest: '/anime/donghub/latest',
-    popular: '/anime/donghub/popular',
-    movie: '/anime/donghub/movie',
-    schedule: '/anime/donghub/schedule',
-    search: (q) => `/anime/donghub/search/${q}`,
-    genreDetail: (slug) => `/anime/donghub/genre/${slug}`,
-    list: (slug) => `/anime/donghub/list/${slug}`,
-    detail: (slug) => `/anime/donghub/detail/${slug}`,
-    episode: (slug) => `/anime/donghub/episode/${slug}`,
-  },
-  donghua: {
-    name: 'Donghua',
-    home: (page = 1) => `/anime/donghua/home/${page}`,
-    ongoing: (page = 1) => `/anime/donghua/ongoing/${page}`,
-    completed: (page = 1) => `/anime/donghua/completed/${page}`,
-    latest: (page = 1) => `/anime/donghua/latest/${page}`,
-    schedule: '/anime/donghua/schedule',
-    azList: (slug, page = 1) => `/anime/donghua/az-list/${slug}/${page}`,
-    search: (q, page = 1) => `/anime/donghua/search/${q}/${page}`,
-    detail: (slug) => `/anime/donghua/detail/${slug}`,
-    episode: (slug) => `/anime/donghua/episode/${slug}`,
-    genres: '/anime/donghua/genres',
-    genreDetail: (slug, page = 1) => `/anime/donghua/genres/${slug}/${page}`,
-    seasonDetail: (year) => `/anime/donghua/seasons/${year}`,
-  },
-};
-
-// ============================================
-// FETCH WITH FALLBACK
-// ============================================
-
-const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-async function apiFetch(path, useCache = true) {
+async function apiFetch(path) {
   const url = BASE + path;
-  const cacheKey = url;
-
-  if (useCache && cache.has(cacheKey)) {
-    const { data, timestamp } = cache.get(cacheKey);
-    if (Date.now() - timestamp < CACHE_TTL) return data;
+  if (CACHE.has(url)) {
+    const { data, ts } = CACHE.get(url);
+    if (Date.now() - ts < CACHE_TTL) return data;
   }
-
-  try {
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (useCache) cache.set(cacheKey, { data, timestamp: Date.now() });
-    return data;
-  } catch (err) {
-    console.warn(`[API] Failed: ${url}`, err.message);
-    throw err;
-  }
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(10000),
+    headers: { 'Accept': 'application/json' },
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  CACHE.set(url, { data, ts: Date.now() });
+  return data;
 }
 
-// Try multiple endpoints, return first success
-async function fetchWithFallback(endpoints) {
+async function fallback(endpoints) {
   for (const path of endpoints) {
     if (!path) continue;
     try {
       const data = await apiFetch(path);
-      if (data && (data.data || data.result || data.anime || Array.isArray(data) || data.status === 'ok' || data.ok)) {
-        return { data, source: path };
+      if (data !== null && data !== undefined) {
+        console.log('[API OK]', path);
+        return data;
       }
-    } catch {}
+    } catch (e) {
+      console.warn('[API FAIL]', path, e.message);
+    }
   }
   return null;
 }
 
-// ============================================
-// UNIFIED API METHODS
-// ============================================
+function toList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  const keys = [
+    'data','result','results','anime','animeList','list','items',
+    'animes','posts','latest','ongoing','completed','popular',
+    'movies','donghua','genres','episodes','schedule',
+  ];
+  for (const k of keys) {
+    if (raw[k] && Array.isArray(raw[k])) return raw[k];
+    if (raw[k] && typeof raw[k] === 'object') {
+      for (const k2 of keys) {
+        if (raw[k][k2] && Array.isArray(raw[k][k2])) return raw[k][k2];
+      }
+    }
+  }
+  return [];
+}
+
+function toDetail(raw) {
+  if (!raw) return {};
+  const keys = ['data','result','anime','detail','info','episode'];
+  for (const k of keys) {
+    if (raw[k] && typeof raw[k] === 'object' && !Array.isArray(raw[k])) return raw[k];
+  }
+  return raw;
+}
+
+function pick(obj) {
+  const keys = Array.prototype.slice.call(arguments, 1);
+  for (const k of keys) {
+    if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+  }
+  return null;
+}
+
+function normalizeItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  return {
+    _raw: item,
+    title: pick(item,'title','judul','name','anime_title','animeTitle','romaji','english','native') || 'Unknown',
+    slug: pick(item,'slug','animeId','anime_id','id','url','link','endpoint','href','path') || '',
+    image: pick(item,'poster','image','img','thumb','thumbnail','cover','foto','banner','coverImage','poster_url','image_url') || '',
+    score: pick(item,'score','rating','nilai','rate','mal_score') || '',
+    status: pick(item,'status','tipe_status','airing_status') || '',
+    type: pick(item,'type','tipe','format') || '',
+    totalEpisode: pick(item,'total_episode','episodes','episode_count','totalEpisode','jumlah_episode','eps','total_eps') || '',
+    synopsis: pick(item,'synopsis','sinopsis','description','deskripsi','overview','plot','summary') || '',
+    genres: (function() {
+      const g = pick(item,'genres','genre','genreList','genre_list','tags');
+      if (!g) return [];
+      if (Array.isArray(g)) return g.map(function(x){ return typeof x === 'string' ? x : (x && (x.name || x.genre || x.slug || '')); });
+      if (typeof g === 'string') return g.split(',').map(function(s){ return s.trim(); });
+      return [];
+    })(),
+    episodes: (function() {
+      const e = pick(item,'episodeList','episodes','episode_list','listEpisode','list_episode','eps','daftar_episode','episode');
+      return Array.isArray(e) ? e : [];
+    })(),
+  };
+}
 
 const API = {
-  // HOME - latest releases fallback chain
-  async getHome() {
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.home,
-      ANIME_SOURCES.samehadaku.home,
-      ANIME_SOURCES.animasu.home,
-      ANIME_SOURCES.animesail.home,
-      ANIME_SOURCES.animekuindo.home,
+  async getLatest(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/stream/latest/' + page,
+      '/anime/samehadaku/recent?page=' + page,
+      '/anime/animasu/latest?page=' + page,
+      '/anime/animekuindo/latest?page=' + page,
+      '/anime/animesail/terbaru?page=' + page,
+      '/anime/oploverz/home?page=' + page,
+      '/anime/anoboy/home?page=' + page,
+      '/anime/home',
     ]);
+    return toList(raw);
   },
 
-  // LATEST / RECENT
-  async getLatest(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.stream.latest(page)}`,
-      `${ANIME_SOURCES.samehadaku.recent}?page=${page}`,
-      `${ANIME_SOURCES.animasu.latest}?page=${page}`,
-      `${ANIME_SOURCES.animekuindo.latest}?page=${page}`,
-      `${ANIME_SOURCES.nimegami.home}?page=${page}`,
+  async getPopular(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/samehadaku/popular?page=' + page,
+      '/anime/animasu/popular?page=' + page,
+      '/anime/stream/popular',
+      '/anime/kura/quick/popular?page=' + page,
+      '/anime/donghub/popular?page=' + page,
+      '/anime/animekuindo/popular?page=' + page,
     ]);
+    return toList(raw);
   },
 
-  // POPULAR
-  async getPopular(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.stream.popular}`,
-      `${ANIME_SOURCES.samehadaku.popular}?page=${page}`,
-      `${ANIME_SOURCES.animasu.popular}?page=${page}`,
-      `${ANIME_SOURCES.kuramanime.popular}?page=${page}`,
-      `${ANIME_SOURCES.donghub.popular}?page=${page}`,
+  async getOngoing(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/ongoing-anime?page=' + page,
+      '/anime/samehadaku/ongoing?page=' + page,
+      '/anime/animasu/ongoing?page=' + page,
+      '/anime/animekuindo/latest?page=' + page,
+      '/anime/oploverz/ongoing?page=' + page,
     ]);
+    return toList(raw);
   },
 
-  // ONGOING
-  async getOngoing(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.otakudesu.ongoing}?page=${page}`,
-      `${ANIME_SOURCES.samehadaku.ongoing}?page=${page}`,
-      `${ANIME_SOURCES.animasu.ongoing}?page=${page}`,
-      `${ANIME_SOURCES.animekuindo.latest}?page=${page}`,
-      `${ANIME_SOURCES.oploverz.ongoing}?page=${page}`,
+  async getCompleted(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/complete-anime?page=' + page,
+      '/anime/samehadaku/completed?page=' + page,
+      '/anime/animasu/completed?page=' + page,
+      '/anime/oploverz/completed?page=' + page,
     ]);
+    return toList(raw);
   },
 
-  // COMPLETED
-  async getCompleted(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.otakudesu.completed}?page=${page}`,
-      `${ANIME_SOURCES.samehadaku.completed}?page=${page}`,
-      `${ANIME_SOURCES.animasu.completed}?page=${page}`,
-      `${ANIME_SOURCES.oploverz.completed}?page=${page}`,
+  async getMovies(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/stream/movie/' + page,
+      '/anime/samehadaku/movies?page=' + page,
+      '/anime/animasu/movies?page=' + page,
+      '/anime/animekuindo/movie?page=' + page,
+      '/anime/animesail/movie?page=' + page,
     ]);
+    return toList(raw);
   },
 
-  // MOVIES
-  async getMovies(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.stream.movie(page)}`,
-      `${ANIME_SOURCES.samehadaku.movies}?page=${page}`,
-      `${ANIME_SOURCES.animasu.movies}?page=${page}`,
-      `${ANIME_SOURCES.animekuindo.movie}?page=${page}`,
-      `${ANIME_SOURCES.animesail.movie}?page=${page}`,
+  async getDonghua(page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/donghua/latest/' + page,
+      '/anime/donghua/home/' + page,
+      '/anime/donghub/latest?page=' + page,
+      '/anime/animesail/donghua?page=' + page,
+      '/anime/kura/quick/donghua?page=' + page,
     ]);
+    return toList(raw);
   },
 
-  // DONGHUA
-  async getDonghua(page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.donghua.latest(page)}`,
-      `${ANIME_SOURCES.donghua.home(page)}`,
-      `${ANIME_SOURCES.donghub.latest}?page=${page}`,
-      `${ANIME_SOURCES.animesail.donghua}?page=${page}`,
-      `${ANIME_SOURCES.kuramanime.donghua}?page=${page}`,
-    ]);
-  },
-
-  // SCHEDULE
   async getSchedule() {
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.schedule,
-      ANIME_SOURCES.samehadaku.schedule,
-      ANIME_SOURCES.animasu.schedule,
-      ANIME_SOURCES.animesail.schedule,
-      ANIME_SOURCES.animekuindo.schedule,
-      ANIME_SOURCES.oploverz.schedule,
+    const raw = await fallback([
+      '/anime/schedule',
+      '/anime/samehadaku/schedule',
+      '/anime/animasu/schedule',
+      '/anime/animesail/schedule',
+      '/anime/animekuindo/schedule',
+      '/anime/oploverz/schedule',
     ]);
+    return raw;
   },
 
-  // SEARCH
-  async search(query, page = 1) {
-    const q = encodeURIComponent(query);
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.search(q),
-      `${ANIME_SOURCES.samehadaku.search}?q=${q}`,
-      ANIME_SOURCES.animasu.search(q),
-      ANIME_SOURCES.animekuindo.search(q),
-      ANIME_SOURCES.stream.search(q),
-      ANIME_SOURCES.animesail.search(q),
-      ANIME_SOURCES.oploverz.search(q),
-      ANIME_SOURCES.nimegami.search(q),
-    ]);
-  },
-
-  // GENRES
   async getGenres() {
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.genres,
-      ANIME_SOURCES.samehadaku.genres,
-      ANIME_SOURCES.animasu.genres,
-      ANIME_SOURCES.animekuindo.genres,
-      ANIME_SOURCES.kuramanime.genreList,
+    const raw = await fallback([
+      '/anime/genre',
+      '/anime/samehadaku/genres',
+      '/anime/animasu/genres',
+      '/anime/animekuindo/genres',
+      '/anime/kura/properties/genre',
+      '/anime/stream/genres',
     ]);
+    return toList(raw);
   },
 
-  // DETAIL - try multiple sources
-  async getDetail(slug, animeId = null) {
-    const endpoints = [
-      ANIME_SOURCES.otakudesu.detail(slug),
-      ANIME_SOURCES.samehadaku.detail(slug),
-      ANIME_SOURCES.animasu.detail(slug),
-      ANIME_SOURCES.animekuindo.detail(slug),
-      ANIME_SOURCES.stream.detail(slug),
-      ANIME_SOURCES.animesail.detail(slug),
-      ANIME_SOURCES.nimegami.detail(slug),
-      ANIME_SOURCES.oploverz.detail(slug),
-    ];
-    return fetchWithFallback(endpoints);
+  async search(query) {
+    const q = encodeURIComponent(query);
+    const raw = await fallback([
+      '/anime/search/' + q,
+      '/anime/samehadaku/search?q=' + q,
+      '/anime/animasu/search/' + q,
+      '/anime/animekuindo/search/' + q,
+      '/anime/stream/search/' + q,
+      '/anime/animesail/search/' + q,
+      '/anime/oploverz/search/' + q,
+      '/anime/nimegami/search/' + q,
+      '/anime/anoboy/search/' + q,
+      '/anime/donghub/search/' + q,
+    ]);
+    return toList(raw);
   },
 
-  // EPISODE
+  async getDetail(slug) {
+    const raw = await fallback([
+      '/anime/anime/' + slug,
+      '/anime/samehadaku/anime/' + slug,
+      '/anime/animasu/detail/' + slug,
+      '/anime/animekuindo/detail/' + slug,
+      '/anime/stream/anime/' + slug,
+      '/anime/animesail/detail/' + slug,
+      '/anime/nimegami/detail/' + slug,
+      '/anime/oploverz/anime/' + slug,
+      '/anime/anoboy/anime/' + slug,
+    ]);
+    return raw ? toDetail(raw) : {};
+  },
+
   async getEpisode(slug) {
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.episode(slug),
-      ANIME_SOURCES.samehadaku.episode(slug),
-      ANIME_SOURCES.animasu.episode(slug),
-      ANIME_SOURCES.animekuindo.episode(slug),
-      ANIME_SOURCES.stream.episode(slug),
-      ANIME_SOURCES.animesail.episode(slug),
-      ANIME_SOURCES.oploverz.episode(slug),
-      ANIME_SOURCES.anoboy.episode(slug),
+    const raw = await fallback([
+      '/anime/episode/' + slug,
+      '/anime/samehadaku/episode/' + slug,
+      '/anime/animasu/episode/' + slug,
+      '/anime/animekuindo/episode/' + slug,
+      '/anime/stream/episode/' + slug,
+      '/anime/animesail/episode/' + slug,
+      '/anime/oploverz/episode/' + slug,
+      '/anime/anoboy/episode/' + slug,
     ]);
+    return raw ? toDetail(raw) : null;
   },
 
-  // SERVER/EMBED
   async getServer(serverId) {
-    return fetchWithFallback([
-      ANIME_SOURCES.otakudesu.server(serverId),
-      ANIME_SOURCES.samehadaku.server(serverId),
+    const raw = await fallback([
+      '/anime/server/' + serverId,
+      '/anime/samehadaku/server/' + serverId,
     ]);
+    return raw ? toDetail(raw) : null;
   },
 
-  // GENRE DETAIL
-  async getByGenre(slug, page = 1) {
-    return fetchWithFallback([
-      `${ANIME_SOURCES.otakudesu.genreDetail(slug)}?page=${page}`,
-      `${ANIME_SOURCES.animasu.genreDetail(slug)}?page=${page}`,
-      `${ANIME_SOURCES.animekuindo.genreDetail(slug)}?page=${page}`,
-      `${ANIME_SOURCES.stream.genreDetail(slug, page)}`,
+  async getByGenre(slug, page) {
+    page = page || 1;
+    const raw = await fallback([
+      '/anime/genre/' + slug + '?page=' + page,
+      '/anime/animasu/genre/' + slug + '?page=' + page,
+      '/anime/animekuindo/genres/' + slug + '?page=' + page,
+      '/anime/stream/genres/' + slug + '/' + page,
+      '/anime/anoboy/genre/' + slug + '?page=' + page,
     ]);
+    return toList(raw);
   },
 };
 
 window.API = API;
-window.ANIME_SOURCES = ANIME_SOURCES;
+window.normalizeItem = normalizeItem;
+window.toList = toList;
+window.toDetail = toDetail;
