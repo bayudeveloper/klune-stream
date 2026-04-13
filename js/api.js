@@ -46,26 +46,19 @@ async function fallback(endpoints) {
 // Normalisasi slug — buang prefix path kalau sudah ada
 function cleanSlug(slug) {
   if (!slug) return '';
-  // Kalau slug adalah full URL, ambil bagian terakhir
+  // Full URL -> ambil pathname
   if (slug.startsWith('http')) {
     try { slug = new URL(slug).pathname; } catch(e) {}
   }
   // Buang leading slash
   slug = slug.replace(/^\/+/, '');
-  // Buang prefix yang umum dari berbagai source
-  const prefixes = [
-    'anime/episode/', 'anime/anime/', 'anime/samehadaku/episode/',
-    'anime/samehadaku/anime/', 'anime/animasu/episode/', 'anime/animasu/detail/',
-    'anime/animekuindo/episode/', 'anime/animekuindo/detail/',
-    'anime/stream/episode/', 'anime/stream/anime/',
-    'anime/animesail/episode/', 'anime/animesail/detail/',
-    'anime/oploverz/episode/', 'anime/oploverz/anime/',
-    'anime/anoboy/episode/', 'anime/anoboy/anime/',
-    'anime/nimegami/episode/', 'anime/nimegami/detail/',
-  ];
-  for (const p of prefixes) {
-    if (slug.startsWith(p)) { slug = slug.slice(p.length); break; }
-  }
+  // Strip semua kombinasi: (anime/)?(source)?/(episode|anime|detail|watch)/
+  slug = slug.replace(
+    /^(?:anime\/)?(?:samehadaku|animasu|animekuindo|stream|animesail|oploverz|anoboy|nimegami|donghub|donghua|kura|kusonime|winbu|alqanime|otakudesu)\/(?:episode|anime|detail|watch|series|film|batch|server)\//,
+    ''
+  );
+  // Fallback: prefix generik tanpa nama source
+  slug = slug.replace(/^(?:anime\/)?(?:episode|anime|detail|watch)\//, '');
   return slug;
 }
 
@@ -75,16 +68,24 @@ function toList(raw) {
   const keys = [
     'data','result','results','anime','animeList','list','items',
     'animes','posts','latest','ongoing','completed','popular',
-    'movies','donghua','genres','episodes','schedule',
+    'movies','donghua','genres','episodes','schedule','anime_list',
+    'daftar','konten','contents','feeds','entries',
   ];
+  // Cek 1 level
   for (const k of keys) {
-    if (raw[k] && Array.isArray(raw[k])) return raw[k];
-    if (raw[k] && typeof raw[k] === 'object') {
+    if (raw[k] && Array.isArray(raw[k]) && raw[k].length > 0) return raw[k];
+  }
+  // Cek 2 level nested
+  for (const k of keys) {
+    if (raw[k] && typeof raw[k] === 'object' && !Array.isArray(raw[k])) {
       for (const k2 of keys) {
-        if (raw[k][k2] && Array.isArray(raw[k][k2])) return raw[k][k2];
+        if (raw[k][k2] && Array.isArray(raw[k][k2]) && raw[k][k2].length > 0) return raw[k][k2];
       }
     }
   }
+  // Cek kalau raw sendiri adalah object dengan banyak key yang masing2 adalah array
+  // (format schedule: {senin: [...], selasa: [...], ...})
+  // Jangan return ini sebagai list
   return [];
 }
 
@@ -163,11 +164,24 @@ const API = {
   async getDonghua(page) {
     page = page || 1;
     const raw = await fallback([
+      // Donghua source (path param)
       '/anime/donghua/latest/' + page,
       '/anime/donghua/home/' + page,
+      '/anime/donghua/ongoing/' + page,
+      // Tanpa page param
+      '/anime/donghua/latest',
+      '/anime/donghua/home',
+      // Donghub
       '/anime/donghub/latest?page=' + page,
+      '/anime/donghub/home',
+      '/anime/donghub/popular',
+      // Lainnya
       '/anime/animesail/donghua?page=' + page,
+      '/anime/animesail/donghua',
       '/anime/kura/quick/donghua?page=' + page,
+      '/anime/kura/quick/donghua',
+      // Fallback ke animesail terbaru (banyak donghua di sana)
+      '/anime/animesail/terbaru?page=' + page,
     ]);
     return toList(raw);
   },
