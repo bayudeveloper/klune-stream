@@ -80,15 +80,20 @@ function cleanSlug(slug) {
   if (slug.startsWith('http')) {
     try { slug = new URL(slug).pathname; } catch(e) {}
   }
-  // Buang leading slash
-  slug = slug.replace(/^\/+/, '');
-  // Strip semua kombinasi: (anime/)?(source)?/(episode|anime|detail|watch)/
-  slug = slug.replace(
-    /^(?:anime\/)?(?:samehadaku|animasu|animekuindo|stream|animesail|oploverz|anoboy|nimegami|donghub|donghua|kura|kusonime|winbu|alqanime|otakudesu)\/(?:episode|anime|detail|watch|series|film|batch|server)\//,
-    ''
-  );
-  // Fallback: prefix generik tanpa nama source
-  slug = slug.replace(/^(?:anime\/)?(?:episode|anime|detail|watch)\//, '');
+  // Buang leading & trailing slash
+  slug = slug.replace(/^\/+/, '').replace(/\/+$/, '');
+  // Strip berulang sampai tidak ada lagi prefix yang dikenal
+  // Handles: /samehadaku/episode/xxx, anime/samehadaku/episode/xxx, dll
+  var prev;
+  do {
+    prev = slug;
+    slug = slug.replace(
+      /^(?:anime\/)?(?:samehadaku|animasu|animekuindo|stream|animesail|oploverz|anoboy|nimegami|donghub|donghua|kura|kusonime|winbu|alqanime|otakudesu)\/(?:episode|anime|detail|watch|series|film|batch|server)\//,
+      ''
+    );
+    slug = slug.replace(/^(?:anime\/)?(?:episode|anime|detail|watch|server)\//, '');
+    slug = slug.replace(/^\/+/, '');
+  } while (slug !== prev);
   return slug;
 }
 
@@ -263,33 +268,46 @@ const API = {
 
   async getDetail(slug) {
     slug = cleanSlug(slug);
+    // animekuindo dipindah ke bawah karena sering return data scraper yang rusak
     const raw = await fallback([
       '/anime/anime/' + slug,
       '/anime/samehadaku/anime/' + slug,
       '/anime/animasu/detail/' + slug,
-      '/anime/animekuindo/detail/' + slug,
       '/anime/stream/anime/' + slug,
       '/anime/animesail/detail/' + slug,
       '/anime/nimegami/detail/' + slug,
       '/anime/oploverz/anime/' + slug,
       '/anime/anoboy/anime/' + slug,
+      '/anime/animekuindo/detail/' + slug,
     ]);
-    return raw ? toDetail(raw) : {};
+    if (!raw) return {};
+    var detail = toDetail(raw);
+    // Validasi: skip kalau title rusak
+    var t = detail.title||detail.judul||detail.name||'';
+    if (t && (t.includes('\t') || t.includes('\n') || t.length > 200)) {
+      console.warn('[Detail] data corrupt from source, title:', t.slice(0,60));
+      return {};
+    }
+    return detail;
   },
 
   async getEpisode(slug) {
     slug = cleanSlug(slug);
+    console.log('[getEpisode] cleaned slug:', slug);
     const raw = await fallback([
       '/anime/episode/' + slug,
       '/anime/samehadaku/episode/' + slug,
       '/anime/animasu/episode/' + slug,
-      '/anime/animekuindo/episode/' + slug,
       '/anime/stream/episode/' + slug,
       '/anime/animesail/episode/' + slug,
       '/anime/oploverz/episode/' + slug,
       '/anime/anoboy/episode/' + slug,
+      '/anime/animekuindo/episode/' + slug,
     ]);
-    return raw ? toDetail(raw) : null;
+    if (!raw) return null;
+    var detail = toDetail(raw);
+    console.log('[getEpisode] detail keys:', Object.keys(detail));
+    return detail;
   },
 
   async getServer(serverId) {
