@@ -98,14 +98,18 @@ function toList(raw) {
   const keys = [
     'data','result','results','anime','animeList','list','items',
     'animes','posts','latest','ongoing','completed','popular',
-    'movies','donghua','genres','episodes','schedule','anime_list',
+    'movies','genres','episodes','schedule','anime_list',
     'daftar','konten','contents','feeds','entries',
+    // Key spesifik dari API ini
+    'latest_donghua','donghua_list','donghua',
+    'latest_anime','ongoing_anime','completed_anime',
+    'anime_list','movie_list','schedule_list',
   ];
-  // Cek 1 level
+  // Cek 1 level langsung
   for (const k of keys) {
     if (raw[k] && Array.isArray(raw[k]) && raw[k].length > 0) return raw[k];
   }
-  // Cek 2 level nested
+  // Cek 2 level nested (misal: {data: {latest_donghua: [...]}})
   for (const k of keys) {
     if (raw[k] && typeof raw[k] === 'object' && !Array.isArray(raw[k])) {
       for (const k2 of keys) {
@@ -113,18 +117,19 @@ function toList(raw) {
       }
     }
   }
-  // Cek kalau raw sendiri adalah object dengan banyak key yang masing2 adalah array
-  // (format schedule: {senin: [...], selasa: [...], ...})
-  // Jangan return ini sebagai list
   return [];
 }
 
 function toDetail(raw) {
   if (!raw) return {};
-  const keys = ['data','result','anime','detail','info','episode'];
+  // Animasu pakai: {status, creator, source, detail: {...}}
+  // Otakudesu pakai: {status, data: {...}}
+  // Stream pakai: {status, creator, source, title, streams, downloads}
+  const keys = ['detail','data','result','anime','info','episode'];
   for (const k of keys) {
     if (raw[k] && typeof raw[k] === 'object' && !Array.isArray(raw[k])) return raw[k];
   }
+  // Kalau tidak ada wrapper, return raw itu sendiri (mungkin sudah flat)
   return raw;
 }
 
