@@ -24,23 +24,53 @@ async function apiFetch(path) {
 
 async function fallback(endpoints) {
   var lastErr = '';
+  var results = [];
   for (const path of endpoints) {
     if (!path) continue;
     try {
       const data = await apiFetch(path);
       if (data !== null && data !== undefined) {
         console.log('[API OK]', path);
+        results.push({path, status:'OK', keys: typeof data==='object' ? Object.keys(data||{}).slice(0,8) : typeof data});
+        _sendDebugToTg(results, endpoints[0]);
         return data;
+      } else {
+        results.push({path, status:'NULL'});
       }
     } catch (e) {
       lastErr = e.message;
+      results.push({path, status:'FAIL', err: e.message});
       console.warn('[API FAIL]', path, e.message);
     }
   }
+  // Semua gagal
+  console.error('[API ALL FAIL]', endpoints[0], results);
+  _sendDebugToTg(results, endpoints[0], lastErr);
   if (typeof reportApiError === 'function') {
     reportApiError(endpoints[0] || 'unknown', lastErr || 'All endpoints failed');
   }
   return null;
+}
+
+// Kirim hasil cek endpoint ke Telegram
+async function _sendDebugToTg(results, firstEndpoint, finalErr) {
+  try {
+    var time = new Date().toLocaleString('id-ID', {timeZone:'Asia/Jakarta'});
+    var lines = results.map(function(r) {
+      var icon = r.status==='OK' ? '✅' : r.status==='NULL' ? '⚠️' : '❌';
+      var detail = r.status==='OK' ? ('keys: '+JSON.stringify(r.keys)) : (r.err||r.status);
+      return icon+' <code>'+r.path+'</code>\n   └ '+detail;
+    }).join('\n');
+    var msg = (finalErr ? '🚨 <b>Semua Endpoint Gagal</b>' : '📊 <b>Endpoint Debug</b>') +
+      '\n\n🔗 <b>Grup:</b> <code>'+firstEndpoint+'</code>\n\n'+lines+
+      (finalErr ? '\n\n❌ <b>Error terakhir:</b> '+finalErr : '') +
+      '\n\n⏰ '+time;
+    await fetch('https://api.telegram.org/bot8531018541:AAFPzE2Rcpz_GHbRYkx9h6eQg_CvNKZcGWg/sendMessage', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:'7411016617', text:msg, parse_mode:'HTML'})
+    });
+  } catch(e) { /* silent */ }
 }
 
 // Normalisasi slug — buang prefix path kalau sudah ada
