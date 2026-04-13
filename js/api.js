@@ -268,7 +268,7 @@ const API = {
 
   async getDetail(slug) {
     slug = cleanSlug(slug);
-    // animekuindo dipindah ke bawah karena sering return data scraper yang rusak
+    // Coba semua source + endpoint donghua khusus
     const raw = await fallback([
       '/anime/anime/' + slug,
       '/anime/samehadaku/anime/' + slug,
@@ -278,15 +278,37 @@ const API = {
       '/anime/nimegami/detail/' + slug,
       '/anime/oploverz/anime/' + slug,
       '/anime/anoboy/anime/' + slug,
+      // Donghua specific
+      '/anime/donghua/detail/' + slug,
+      '/anime/donghub/detail/' + slug,
       '/anime/animekuindo/detail/' + slug,
     ]);
     if (!raw) return {};
     var detail = toDetail(raw);
-    // Validasi: skip kalau title rusak
     var t = detail.title||detail.judul||detail.name||'';
     if (t && (t.includes('\t') || t.includes('\n') || t.length > 200)) {
-      console.warn('[Detail] data corrupt from source, title:', t.slice(0,60));
+      console.warn('[Detail] data corrupt, title:', t.slice(0,60));
       return {};
+    }
+    // Kalau episodes kosong, coba fetch episode list terpisah
+    var eps = detail.episodeList||detail.episodes||detail.episode_list||[];
+    if ((!eps || eps.length === 0) && slug) {
+      console.log('[Detail] episodes empty, trying episode list endpoints...');
+      var epRaw = await fallback([
+        '/anime/animesail/detail/' + slug,
+        '/anime/donghua/detail/' + slug,
+        '/anime/donghub/detail/' + slug,
+        '/anime/nimegami/detail/' + slug,
+        '/anime/samehadaku/anime/' + slug,
+      ]);
+      if (epRaw) {
+        var epDetail = toDetail(epRaw);
+        var eps2 = epDetail.episodeList||epDetail.episodes||epDetail.episode_list||[];
+        if (eps2 && eps2.length > 0) {
+          detail.episodes = eps2;
+          detail.episodeList = eps2;
+        }
+      }
     }
     return detail;
   },
@@ -302,6 +324,9 @@ const API = {
       '/anime/animesail/episode/' + slug,
       '/anime/oploverz/episode/' + slug,
       '/anime/anoboy/episode/' + slug,
+      // Donghua specific
+      '/anime/donghua/episode/' + slug,
+      '/anime/donghub/episode/' + slug,
       '/anime/animekuindo/episode/' + slug,
     ]);
     if (!raw) return null;
@@ -335,4 +360,3 @@ window.API = API;
 window.cleanSlug = cleanSlug;
 window.toList = toList;
 window.toDetail = toDetail;
- 
