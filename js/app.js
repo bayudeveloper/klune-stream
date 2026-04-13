@@ -1,647 +1,544 @@
 // ============================================
-// KLUNE STREAM - App Logic
+// KLUNE STREAM - App v3
 // ============================================
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Data store untuk cards (hindari masalah escape di onclick) ────────────────
+window._cards = [];
 
-function img(item) {
-  if (!item) return 'https://placehold.co/300x450/16161e/555?text=No+Image';
-  const v = item.poster || item.image || item.img || item.thumb || item.thumbnail ||
-    item.cover || item.foto || item.banner || item.coverImage || item.poster_url || '';
-  return v || 'https://placehold.co/300x450/16161e/555?text=No+Image';
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-function ttl(item) {
-  if (!item) return 'Unknown';
-  return item.title || item.judul || item.name || item.anime_title ||
-    item.animeTitle || item.romaji || item.english || item.native || 'Unknown';
+function getImg(o) {
+  if (!o) return '';
+  return o.poster||o.image||o.img||o.thumb||o.thumbnail||o.cover||o.foto||o.banner||o.coverImage||o.poster_url||o.image_url||'';
 }
-
-function slg(item) {
-  if (!item) return '';
-  return item.slug || item.animeId || item.anime_id || item.id ||
-    item.url || item.link || item.endpoint || item.href || '';
+function getTitle(o) {
+  if (!o) return 'Unknown';
+  return o.title||o.judul||o.name||o.anime_title||o.animeTitle||o.romaji||o.english||'Unknown';
 }
-
-function epSlug(ep) {
+function getSlug(o) {
+  if (!o) return '';
+  return o.slug||o.animeId||o.anime_id||o.id||o.url||o.link||o.endpoint||o.href||'';
+}
+function getEpSlug(ep) {
   if (!ep) return '';
-  return ep.slug || ep.episode_id || ep.id || ep.url || ep.link || ep.href || ep.endpoint || '';
+  return ep.slug||ep.episode_id||ep.id||ep.url||ep.link||ep.href||ep.endpoint||'';
 }
-
-function epLabel(ep, idx) {
-  if (!ep) return 'Episode ' + (idx + 1);
-  return ep.episode || ep.eps || ep.title || ep.judul || ep.label || ep.name || ('Episode ' + (idx + 1));
+function getEpLabel(ep, i) {
+  if (!ep) return 'Episode '+(i+1);
+  return ep.episode||ep.eps||ep.title||ep.judul||ep.name||ep.label||('Episode '+(i+1));
 }
-
-function getEmbedUrl(data) {
-  if (!data) return '';
-  // Cari embed URL dari berbagai field
-  let url = data.embed || data.embedUrl || data.iframe || data.iframeUrl ||
-    data.stream_url || data.streamUrl || data.url || data.link || data.src || '';
-  // Kalau ada array server, ambil yang pertama
-  if (!url && data.server) {
-    const s = Array.isArray(data.server) ? data.server[0] : data.server;
-    if (s) url = s.url || s.embed || s.iframe || s.src || s.link || '';
-  }
-  if (!url && data.servers) {
-    const s = Array.isArray(data.servers) ? data.servers[0] : data.servers;
-    if (s) url = s.url || s.embed || s.iframe || s.src || s.link || '';
-  }
-  if (!url && data.streamUrls) {
-    const s = Array.isArray(data.streamUrls) ? data.streamUrls[0] : data.streamUrls;
-    if (s) url = typeof s === 'string' ? s : (s.url || s.embed || '');
-  }
-  return url || '';
+function getSynopsis(o) {
+  if (!o) return '';
+  return o.synopsis||o.sinopsis||o.description||o.deskripsi||o.overview||o.plot||o.summary||'';
 }
-
-function getServers(data) {
-  if (!data) return [];
-  const raw = data.server || data.servers || data.streamUrls || data.mirror || data.links || [];
-  const arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-  return arr.map(function(s, i) {
-    if (typeof s === 'string') return { name: 'Server ' + (i + 1), url: s };
-    return {
-      name: s.name || s.server || s.quality || ('Server ' + (i + 1)),
-      url: s.url || s.embed || s.iframe || s.src || s.link || '',
-    };
-  }).filter(function(s) { return s.url; });
-}
-
-function getEpisodes(data) {
-  if (!data) return [];
-  const e = data.episodeList || data.episodes || data.episode_list ||
-    data.listEpisode || data.list_episode || data.daftar_episode ||
-    data.eps || data.episodesList || [];
+function getEpisodes(o) {
+  if (!o) return [];
+  var e = o.episodeList||o.episodes||o.episode_list||o.listEpisode||o.list_episode||o.daftar_episode||o.eps||[];
   return Array.isArray(e) ? e : [];
 }
-
-function getSynopsis(data) {
-  return data.synopsis || data.sinopsis || data.description || data.deskripsi ||
-    data.overview || data.plot || data.summary || '';
+function getEmbed(o) {
+  if (!o) return '';
+  var u = o.embed||o.embedUrl||o.iframe||o.iframeUrl||o.stream_url||o.streamUrl||o.url||o.link||o.src||'';
+  if (!u && o.server) {
+    var s = Array.isArray(o.server) ? o.server[0] : o.server;
+    if (s) u = s.url||s.embed||s.iframe||s.src||s.link||'';
+  }
+  if (!u && o.servers) {
+    var s2 = Array.isArray(o.servers) ? o.servers[0] : o.servers;
+    if (s2) u = s2.url||s2.embed||s2.iframe||s2.src||s2.link||'';
+  }
+  return u||'';
 }
+function getServers(o) {
+  if (!o) return [];
+  var raw = o.server||o.servers||o.mirror||o.links||o.streamUrls||[];
+  var arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  return arr.map(function(s,i){
+    if (typeof s === 'string') return {name:'Server '+(i+1), url:s};
+    return { name: s.name||s.server||s.quality||('Server '+(i+1)), url: s.url||s.embed||s.iframe||s.src||s.link||'' };
+  }).filter(function(s){ return s.url; });
+}
+function ph() { return 'https://placehold.co/300x450/1f1f1f/444?text='; }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function skeletons(n) {
-  let h = '';
-  for (let i = 0; i < n; i++) {
-    h += '<div class="skeleton-card"><div class="skeleton skeleton-thumb"></div>' +
-      '<div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text short"></div></div>';
+function skels(n, inGrid) {
+  var w = inGrid ? '' : ' style="flex-shrink:0;width:155px"';
+  var h = '';
+  for (var i=0; i<n; i++) {
+    h += '<div class="sk-card"'+w+'><div class="sk sk-thumb"></div><div class="sk sk-line"></div><div class="sk sk-line s60"></div></div>';
   }
   return h;
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
+function card(item) {
+  var idx = window._cards.length;
+  window._cards.push(item);
+  var image = getImg(item) || (ph() + encodeURIComponent(getTitle(item).slice(0,12)));
+  var title = getTitle(item);
+  var score = item.score||item.rating||item.nilai||'';
+  var status = (item.status||item.tipe_status||'').toLowerCase();
+  var type = (item.type||item.tipe||'').toLowerCase();
+  var eps = item.total_episode||item.episodes||item.episode_count||item.totalEpisode||'';
 
-function buildCard(item) {
-  const image = img(item);
-  const title = ttl(item);
-  const slug = slg(item);
-  const score = item.score || item.rating || item.nilai || '';
-  const status = (item.status || item.tipe_status || '').toLowerCase();
-  const type = item.type || item.tipe || '';
-  const eps = item.total_episode || item.episodes || item.episode_count || item.totalEpisode || '';
-  const isDonghua = type.toLowerCase().includes('donghua');
-
-  let badges = '';
-  if (status.includes('ongoing') || status.includes('airing') || status.includes('tayang'))
+  var badges = '';
+  if (status.includes('ongoing')||status.includes('airing')||status.includes('tayang'))
     badges += '<span class="badge badge-ongoing">Ongoing</span>';
-  else if (status.includes('complet') || status.includes('tamat') || status.includes('finish'))
+  else if (status.includes('complet')||status.includes('tamat'))
     badges += '<span class="badge badge-completed">Tamat</span>';
-  if (type.toLowerCase().includes('movie'))
-    badges += '<span class="badge badge-movie">Movie</span>';
-  if (isDonghua)
-    badges += '<span class="badge badge-donghua">Donghua</span>';
+  if (type.includes('movie')) badges += '<span class="badge badge-movie">Movie</span>';
+  if (type.includes('donghua')) badges += '<span class="badge badge-donghua">Donghua</span>';
 
-  // Encode item sebagai data attribute untuk menghindari masalah quote/HTML injection
-  const dataIdx = window._cardData ? window._cardData.length : 0;
-  if (!window._cardData) window._cardData = [];
-  window._cardData.push(item);
-
-  return '<div class="anime-card" onclick="openDetailByIdx(' + dataIdx + ')">' +
+  return '<div class="anime-card" onclick="_openDetail('+idx+')">' +
     '<div class="card-thumb">' +
-    '<img src="' + image + '" alt="" loading="lazy" onerror="this.src=\'https://placehold.co/300x450/16161e/555?text=No+Image\'">' +
-    '<div class="card-badges">' + badges + '</div>' +
-    (score ? '<div class="card-rating">★ ' + parseFloat(score).toFixed(1) + '</div>' : '') +
-    '<div class="card-overlay"><div style="width:100%;text-align:center">' +
-    '<div class="card-play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
+    '<img src="'+esc(image)+'" alt="" loading="lazy" onerror="this.src=\''+ph()+'No+Image\'">' +
+    '<div class="card-badges">'+badges+'</div>' +
+    (score ? '<div class="card-score">★ '+parseFloat(score).toFixed(1)+'</div>' : '') +
+    '<div class="card-overlay">' +
+    '<div class="overlay-title">'+esc(title)+'</div>' +
+    '<div class="overlay-btns">' +
+    '<button class="overlay-btn play" onclick="event.stopPropagation();_openDetail('+idx+')"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>' +
+    '<button class="overlay-btn" onclick="event.stopPropagation();_openDetail('+idx+')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>' +
     '</div></div></div>' +
-    '<div class="card-info">' +
-    '<div class="card-title">' + escHtml(title) + '</div>' +
-    '<div class="card-meta">' +
-    (eps ? '<span>' + eps + ' Eps</span>' : '') +
-    '<span>' + (type || 'Anime') + '</span>' +
-    '</div></div></div>';
-}
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    '<div class="card-info"><div class="card-title">'+esc(title)+'</div>' +
+    '<div class="card-sub">'+(eps ? eps+' Eps · ' : '')+(item.type||item.tipe||'Anime')+'</div>' +
+    '</div></div>';
 }
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
-
-var _history = [];
+var _hist = ['home'];
 
 function showPage(name) {
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  var el = document.getElementById('page-' + name);
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  var el = document.getElementById('page-'+name);
   if (el) el.classList.add('active');
   document.getElementById('search-results-container').classList.remove('visible');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.querySelectorAll('.nav-links a').forEach(function(a) {
-    a.classList.toggle('active', a.dataset.page === name);
+  document.querySelectorAll('.nav-links a').forEach(function(a){
+    a.classList.toggle('active', a.dataset.page===name);
   });
-  _history.push(name);
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (_hist[_hist.length-1] !== name) _hist.push(name);
 }
 
 function goBack() {
-  if (_history.length > 1) {
-    _history.pop();
-    var prev = _history[_history.length - 1];
-    _history.pop(); // will be re-added by showPage
-    if (prev === 'home') loadHome();
-    else if (prev === 'browse') showPage('browse');
-    else if (prev === 'genre') loadGenrePage();
-    else if (prev === 'schedule') loadSchedulePage();
-    else showPage(prev);
-  } else {
-    loadHome();
-  }
+  if (_hist.length > 1) { _hist.pop(); }
+  var prev = _hist[_hist.length-1]||'home';
+  if (prev==='home') loadHome();
+  else if (prev==='browse') showPage('browse');
+  else if (prev==='genre') loadGenrePage();
+  else if (prev==='schedule') loadSchedulePage();
+  else showPage(prev);
 }
 
-// ── Navbar scroll ─────────────────────────────────────────────────────────────
+// ── Navbar ────────────────────────────────────────────────────────────────────
+window.addEventListener('scroll', function(){
+  document.getElementById('navbar').classList.toggle('solid', window.scrollY > 60);
+});
 
-document.getElementById('navbar').classList.add('scrolled');
-window.addEventListener('scroll', function() {
-  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10);
+document.querySelectorAll('.nav-links a[data-page]').forEach(function(a){
+  a.addEventListener('click', function(e){
+    e.preventDefault();
+    var p = a.dataset.page;
+    if (p==='home') loadHome();
+    else if (p==='browse') loadBrowsePage('ongoing');
+    else if (p==='donghua') loadBrowsePage('donghua');
+    else if (p==='genre') loadGenrePage();
+    else if (p==='schedule') loadSchedulePage();
+  });
 });
 
 // ── Search ────────────────────────────────────────────────────────────────────
+var _stimer;
+var _sinput = document.getElementById('search-input');
+var _sbox = document.getElementById('search-results-container');
 
-var _searchTimer;
-var _searchInput = document.getElementById('search-input');
-var _searchBox = document.getElementById('search-results-container');
-
-_searchInput.addEventListener('input', function() {
-  clearTimeout(_searchTimer);
-  var q = _searchInput.value.trim();
-  if (!q) { _searchBox.classList.remove('visible'); return; }
-  _searchTimer = setTimeout(function() { doSearch(q); }, 500);
+_sinput.addEventListener('input', function(){
+  clearTimeout(_stimer);
+  var q = _sinput.value.trim();
+  if (!q) { _sbox.classList.remove('visible'); return; }
+  _stimer = setTimeout(function(){ doSearch(q); }, 450);
+});
+_sinput.addEventListener('keydown', function(e){
+  if (e.key==='Escape') { _sbox.classList.remove('visible'); _sinput.value=''; }
+});
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#nav-search-bar') && !e.target.closest('#search-results-container'))
+    _sbox.classList.remove('visible');
 });
 
-_searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') { _searchBox.classList.remove('visible'); _searchInput.value = ''; }
-});
-
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#nav-search-bar') && !e.target.closest('#search-results-container')) {
-    _searchBox.classList.remove('visible');
-  }
-});
-
-async function doSearch(query) {
-  window._cardData = [];
-  _searchBox.innerHTML = '<div class="search-results-title">Mencari "' + escHtml(query) + '"...</div>' +
-    '<div class="search-results-grid">' + skeletons(8) + '</div>';
-  _searchBox.classList.add('visible');
-
+async function doSearch(q) {
+  _sbox.innerHTML = '<div class="search-label">Mencari "'+esc(q)+'"...</div><div class="search-grid">'+skels(8)+'</div>';
+  _sbox.classList.add('visible');
   try {
-    const list = await API.search(query);
-    if (!list || !list.length) {
-      _searchBox.innerHTML = '<div class="search-results-title">Tidak ada hasil untuk "' + escHtml(query) + '"</div>';
-      return;
-    }
-    _searchBox.innerHTML = '<div class="search-results-title">Hasil: "' + escHtml(query) + '" — ' + list.length + ' anime</div>' +
-      '<div class="search-results-grid">' + list.map(buildCard).join('') + '</div>';
+    var list = await API.search(q);
+    if (!list||!list.length) { _sbox.innerHTML='<div class="search-label">Tidak ada hasil untuk "'+esc(q)+'"</div>'; return; }
+    _sbox.innerHTML='<div class="search-label">'+list.length+' hasil untuk "'+esc(q)+'"</div><div class="search-grid">'+list.map(card).join('')+'</div>';
   } catch(e) {
-    _searchBox.innerHTML = '<div class="search-results-title">Gagal mencari. Coba lagi.</div>';
+    _sbox.innerHTML='<div class="search-label">Gagal mencari</div>';
+    if (typeof reportError==='function') reportError('search q='+q, e.message);
   }
 }
 
 // ── HOME ──────────────────────────────────────────────────────────────────────
-
 async function loadHome() {
-  window._cardData = [];
+  window._cards = [];
   showPage('home');
-  loadHero();
-  loadRow('latest-row', function() { return API.getLatest(); });
-  loadRow('popular-row', function() { return API.getPopular(); });
-  loadRow('ongoing-row', function() { return API.getOngoing(); });
-  loadRow('donghua-row', function() { return API.getDonghua(); });
-  loadRow('movie-row', function() { return API.getMovies(); });
+  _loadHero();
+  _loadRow('row-latest', function(){ return API.getLatest(); });
+  _loadRow('row-popular', function(){ return API.getPopular(); });
+  _loadRow('row-ongoing', function(){ return API.getOngoing(); });
+  _loadRow('row-donghua', function(){ return API.getDonghua(); });
+  _loadRow('row-movies', function(){ return API.getMovies(); });
 }
 
-async function loadHero() {
+async function _loadHero() {
   var el = document.getElementById('hero-section');
   if (!el) return;
   try {
-    const list = await API.getLatest();
-    if (!list || !list.length) return;
+    var list = await API.getLatest();
+    if (!list||!list.length) return;
     var item = list[0];
-    var image = img(item);
-    var title = ttl(item);
+    var idx = window._cards.length;
+    window._cards.push(item);
+    var image = getImg(item)||(ph()+encodeURIComponent(getTitle(item).slice(0,12)));
+    var title = getTitle(item);
     var desc = getSynopsis(item);
-    var score = item.score || item.rating || '';
-    var eps = item.total_episode || item.episodes || '';
-    var genres = item.genres || item.genre || [];
-    var genreArr = Array.isArray(genres) ? genres : (typeof genres === 'string' ? genres.split(',') : []);
-    var dataIdx = (window._cardData || []).length;
-    if (!window._cardData) window._cardData = [];
-    window._cardData.push(item);
+    var score = item.score||item.rating||'';
+    var eps = item.total_episode||item.episodes||'';
+    var year = item.year||item.tahun||'';
 
     el.innerHTML =
-      '<div class="hero-bg" style="background-image:url(\'' + image + '\')"></div>' +
-      '<div class="hero-gradient"></div>' +
+      '<div class="hero-bg" style="background-image:url(\''+esc(image)+'\')"></div>' +
+      '<div class="hero-vignette"></div>' +
       '<div class="hero-content">' +
-      '<div class="hero-badge">🔥 Featured</div>' +
-      '<h1 class="hero-title">' + escHtml(title) + '</h1>' +
+      '<h1 class="hero-title">'+esc(title)+'</h1>' +
       '<div class="hero-meta">' +
-      (score ? '<span class="rating">★ ' + parseFloat(score).toFixed(1) + '</span>' : '') +
-      (eps ? '<span class="episode-count">' + eps + ' Episode</span>' : '') +
+      (score ? '<span class="hero-match">'+Math.round(parseFloat(score)*10)+'% Match</span>' : '<span class="hero-match">New</span>') +
+      (year ? '<span class="hero-year">'+esc(String(year))+'</span>' : '') +
+      (eps ? '<span class="hero-eps">'+esc(String(eps))+' Eps</span>' : '') +
       '</div>' +
-      (genreArr.length ? '<div class="hero-tags">' + genreArr.slice(0,4).map(function(g){
-        return '<span class="tag">' + escHtml(typeof g === 'string' ? g : (g && (g.name||g.genre||g.slug||''))) + '</span>';
-      }).join('') + '</div>' : '') +
-      (desc ? '<p class="hero-desc">' + escHtml(desc.slice(0,220)) + (desc.length>220?'...':'') + '</p>' : '') +
-      '<div class="hero-actions">' +
-      '<button class="btn-primary" onclick="openDetailByIdx(' + dataIdx + ')">▶ Tonton Sekarang</button>' +
-      '<button class="btn-secondary" onclick="openDetailByIdx(' + dataIdx + ')">ℹ Info</button>' +
+      (desc ? '<p class="hero-desc">'+esc(desc.slice(0,200))+(desc.length>200?'...':'')+'</p>' : '') +
+      '<div class="hero-btns">' +
+      '<button class="btn btn-play" onclick="_openDetail('+idx+')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Tonton</button>' +
+      '<button class="btn btn-info" onclick="_openDetail('+idx+')"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg> Info</button>' +
       '</div></div>';
-  } catch(e) { console.warn('Hero error', e); }
+  } catch(e) { console.warn('hero error', e); }
 }
 
-async function loadRow(id, fetchFn) {
+async function _loadRow(id, fn) {
   var el = document.getElementById(id);
   if (!el) return;
-  el.innerHTML = skeletons(8);
+  el.innerHTML = skels(8);
   try {
-    const list = await fetchFn();
-    if (!list || !list.length) { el.innerHTML = '<div class="error-message"><p>Tidak ada data</p></div>'; return; }
-    el.innerHTML = list.slice(0,20).map(buildCard).join('');
+    var list = await fn();
+    if (!list||!list.length) { el.innerHTML='<div class="err"><p>Tidak ada data</p></div>'; return; }
+    el.innerHTML = list.slice(0,20).map(card).join('');
   } catch(e) {
-    el.innerHTML = '<div class="error-message"><p>Gagal memuat</p></div>';
+    el.innerHTML='<div class="err"><p>Gagal memuat</p></div>';
+    if (typeof reportError==='function') reportError('loadRow id='+id, e.message);
   }
 }
 
 // ── BROWSE ────────────────────────────────────────────────────────────────────
-
-var _browseTab = 'ongoing';
-var _browsePage = 1;
+var _btab = 'ongoing', _bpage = 1;
 
 async function loadBrowsePage(tab) {
-  window._cardData = [];
-  _browseTab = tab || 'ongoing';
-  _browsePage = 1;
+  window._cards = [];
+  _btab = tab||'ongoing'; _bpage = 1;
   showPage('browse');
   document.querySelectorAll('#page-browse .tab-btn').forEach(function(b){
-    b.classList.toggle('active', b.dataset.tab === _browseTab);
+    b.classList.toggle('active', b.dataset.tab===_btab);
   });
   await _loadBrowse();
 }
 
 async function _loadBrowse() {
-  var grid = document.getElementById('browse-grid');
-  grid.innerHTML = skeletons(18);
+  var g = document.getElementById('browse-grid');
+  g.innerHTML = skels(18, true);
   try {
     var list;
-    if (_browseTab === 'ongoing') list = await API.getOngoing(_browsePage);
-    else if (_browseTab === 'completed') list = await API.getCompleted(_browsePage);
-    else if (_browseTab === 'movies') list = await API.getMovies(_browsePage);
-    else if (_browseTab === 'popular') list = await API.getPopular(_browsePage);
-    else if (_browseTab === 'donghua') list = await API.getDonghua(_browsePage);
+    if (_btab==='ongoing') list = await API.getOngoing(_bpage);
+    else if (_btab==='completed') list = await API.getCompleted(_bpage);
+    else if (_btab==='movies') list = await API.getMovies(_bpage);
+    else if (_btab==='popular') list = await API.getPopular(_bpage);
+    else if (_btab==='donghua') list = await API.getDonghua(_bpage);
     else list = [];
-    if (!list || !list.length) { grid.innerHTML = '<div class="error-message"><h3>Tidak ada data</h3></div>'; return; }
-    grid.innerHTML = list.map(buildCard).join('');
-    _renderPagination();
+    if (!list||!list.length) { g.innerHTML='<div class="err"><h3>Tidak ada data</h3></div>'; return; }
+    g.innerHTML = list.map(card).join('');
+    _renderPg();
   } catch(e) {
-    grid.innerHTML = '<div class="error-message"><h3>Gagal memuat</h3></div>';
+    g.innerHTML='<div class="err"><h3>Gagal memuat</h3></div>';
+    if (typeof reportError==='function') reportError('browse tab='+_btab, e.message);
   }
 }
 
-function _renderPagination() {
-  var el = document.getElementById('browse-pagination');
+function _renderPg() {
+  var el = document.getElementById('browse-pg');
   if (!el) return;
-  var cur = _browsePage, max = 20;
-  var html = '<button class="page-btn" onclick="changePage(' + (cur-1) + ')" ' + (cur<=1?'disabled':'') + '>‹</button>';
-  var start = Math.max(1, cur-2), end = Math.min(max, cur+2);
-  for (var i = start; i <= end; i++) {
-    html += '<button class="page-btn ' + (i===cur?'active':'') + '" onclick="changePage(' + i + ')">' + i + '</button>';
-  }
-  html += '<button class="page-btn" onclick="changePage(' + (cur+1) + ')" ' + (cur>=max?'disabled':'') + '>›</button>';
-  el.innerHTML = html;
+  var c=_bpage, max=20;
+  var h = '<button class="pg-btn" onclick="changePage('+(c-1)+')" '+(c<=1?'disabled':'')+'>‹</button>';
+  var s=Math.max(1,c-2), e=Math.min(max,c+2);
+  for (var i=s;i<=e;i++) h+='<button class="pg-btn '+(i===c?'active':'')+'" onclick="changePage('+i+')">'+i+'</button>';
+  h+='<button class="pg-btn" onclick="changePage('+(c+1)+')" '+(c>=max?'disabled':'')+'>›</button>';
+  el.innerHTML = h;
 }
 
 function changePage(p) {
-  if (p < 1) return;
-  _browsePage = p;
-  _loadBrowse();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (p<1) return;
+  _bpage=p; _loadBrowse();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ── GENRE ─────────────────────────────────────────────────────────────────────
-
 async function loadGenrePage() {
-  window._cardData = [];
+  window._cards = [];
   showPage('genre');
   var listEl = document.getElementById('genre-list');
   var gridEl = document.getElementById('genre-anime-grid');
-  listEl.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-  gridEl.innerHTML = '<div class="error-message"><p>Pilih genre untuk melihat anime</p></div>';
-
+  listEl.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  gridEl.innerHTML = '<div class="err"><p>Pilih genre untuk melihat anime</p></div>';
   try {
-    const genres = await API.getGenres();
-    if (!genres || !genres.length) { listEl.innerHTML = '<div class="error-message"><p>Gagal memuat genre</p></div>'; return; }
-    listEl.innerHTML = genres.map(function(g, i) {
-      var name = typeof g === 'string' ? g : (g.name || g.genre || g.slug || g.id || ('Genre ' + i));
-      var slug = typeof g === 'string' ? g : (g.slug || g.id || g.name || name);
-      return '<button class="genre-chip" data-slug="' + escHtml(slug) + '" onclick="loadGenreAnime(\'' + escHtml(slug) + '\',\'' + escHtml(name) + '\')">' + escHtml(name) + '</button>';
+    var genres = await API.getGenres();
+    if (!genres||!genres.length) { listEl.innerHTML='<div class="err"><p>Gagal memuat</p></div>'; return; }
+    listEl.innerHTML = genres.map(function(g,i){
+      var name = typeof g==='string' ? g : (g.name||g.genre||g.slug||g.id||'Genre '+(i+1));
+      var slug = typeof g==='string' ? g : (g.slug||g.id||g.name||name);
+      return '<button class="genre-chip" data-slug="'+esc(slug)+'" onclick="loadGenreAnime(\''+esc(slug)+'\',\''+esc(name)+'\')">'+esc(name)+'</button>';
     }).join('');
   } catch(e) {
-    listEl.innerHTML = '<div class="error-message"><p>Gagal memuat genre</p></div>';
+    listEl.innerHTML='<div class="err"><p>Gagal memuat genre</p></div>';
   }
 }
 
 async function loadGenreAnime(slug, name) {
   document.querySelectorAll('.genre-chip').forEach(function(c){ c.classList.remove('active'); });
-  var active = document.querySelector('.genre-chip[data-slug="' + slug + '"]');
-  if (active) active.classList.add('active');
-  var grid = document.getElementById('genre-anime-grid');
-  grid.innerHTML = skeletons(12);
+  var a = document.querySelector('.genre-chip[data-slug="'+slug+'"]');
+  if (a) a.classList.add('active');
+  var g = document.getElementById('genre-anime-grid');
+  g.innerHTML = skels(12, true);
   try {
-    const list = await API.getByGenre(slug);
-    if (!list || !list.length) { grid.innerHTML = '<div class="error-message"><p>Tidak ada anime di genre ini</p></div>'; return; }
-    grid.innerHTML = list.map(buildCard).join('');
+    var list = await API.getByGenre(slug);
+    if (!list||!list.length) { g.innerHTML='<div class="err"><p>Tidak ada anime</p></div>'; return; }
+    g.innerHTML = list.map(card).join('');
   } catch(e) {
-    grid.innerHTML = '<div class="error-message"><p>Gagal memuat anime</p></div>';
+    g.innerHTML='<div class="err"><p>Gagal memuat</p></div>';
   }
 }
 
 // ── SCHEDULE ──────────────────────────────────────────────────────────────────
-
 async function loadSchedulePage() {
-  window._cardData = [];
+  window._cards = [];
   showPage('schedule');
-  var el = document.getElementById('schedule-container');
-  el.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-
+  var el = document.getElementById('sched-container');
+  el.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
   try {
-    const raw = await API.getSchedule();
-    var days = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
-    var dayKeys = ['senin','selasa','rabu','kamis','jumat','sabtu','minggu'];
-    var todayIdx = (new Date().getDay() + 6) % 7;
-    var data = (raw && (raw.data || raw.schedule || raw)) || {};
+    var raw = await API.getSchedule();
+    var data = (raw&&(raw.data||raw.schedule||raw))||{};
     var isArr = Array.isArray(data);
-
+    var days = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+    var keys = ['senin','selasa','rabu','kamis','jumat','sabtu','minggu'];
+    var today = (new Date().getDay()+6)%7;
     var html = '<div class="schedule-grid">';
-    dayKeys.forEach(function(day, idx) {
+    keys.forEach(function(k,i){
       var animes = isArr
-        ? data.filter(function(a){ return (a.day||a.hari||'').toLowerCase() === day; })
-        : (data[day] || data[days[idx]] || data[days[idx].toLowerCase()] || []);
-
-      html += '<div class="schedule-day ' + (idx===todayIdx?'today':'') + '">' +
-        '<div class="schedule-day-title">' + days[idx] + (idx===todayIdx?' ✦':'') + '</div>';
-
-      if (Array.isArray(animes) && animes.length) {
-        animes.forEach(function(a) {
-          var dataIdx = (window._cardData||[]).length;
-          if (!window._cardData) window._cardData = [];
-          window._cardData.push(a);
-          html += '<div class="schedule-anime-item" onclick="openDetailByIdx(' + dataIdx + ')">' + escHtml(ttl(a)) + '</div>';
+        ? data.filter(function(a){ return (a.day||a.hari||'').toLowerCase()===k; })
+        : (data[k]||data[days[i]]||data[days[i].toLowerCase()]||[]);
+      html += '<div class="sched-day '+(i===today?'today':'')+'">' +
+        '<div class="sched-day-name">'+days[i]+(i===today?' ●':'')+'</div>';
+      if (Array.isArray(animes)&&animes.length) {
+        animes.forEach(function(a){
+          var idx = window._cards.length;
+          window._cards.push(a);
+          html += '<div class="sched-item" onclick="_openDetail('+idx+')">'+esc(getTitle(a))+'</div>';
         });
       } else {
-        html += '<div class="schedule-anime-item" style="opacity:0.3">—</div>';
+        html += '<div class="sched-item" style="opacity:.3">—</div>';
       }
       html += '</div>';
     });
     html += '</div>';
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = '<div class="error-message"><h3>Gagal memuat jadwal</h3></div>';
+    el.innerHTML='<div class="err"><h3>Gagal memuat jadwal</h3></div>';
   }
 }
 
-// ── DONGHUA ───────────────────────────────────────────────────────────────────
-
-function loadDonghuaPage() {
-  _browseTab = 'donghua';
-  _browsePage = 1;
-  showPage('browse');
-  document.querySelectorAll('#page-browse .tab-btn').forEach(function(b){
-    b.classList.toggle('active', b.dataset.tab === 'donghua');
-  });
-  _loadBrowse();
-}
-
 // ── DETAIL ────────────────────────────────────────────────────────────────────
+var _curEps = [];
+var _curTitle = '';
 
-// Dipanggil dari card (pakai index di _cardData)
-async function openDetailByIdx(idx) {
-  var item = window._cardData && window._cardData[idx];
+function _openDetail(idx) {
+  var item = window._cards[idx];
   if (!item) return;
-  openDetail(slg(item), item);
+  openDetail(getSlug(item), item);
 }
 
-var _currentEps = [];
-var _currentTitle = '';
-
-async function openDetail(slug, seedItem) {
-  window._cardData = window._cardData || [];
+async function openDetail(slug, seed) {
+  window._cards = window._cards||[];
   showPage('detail');
-  var container = document.getElementById('detail-container');
-  container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-
-  // Tampilkan dulu dari seed item kalau ada
-  if (seedItem) _renderDetailSeed(seedItem, container);
-
+  var c = document.getElementById('detail-container');
+  c.innerHTML = '<div class="spinner-wrap" style="min-height:400px"><div class="spinner"></div></div>';
+  if (seed) _renderDetailSeed(seed, c);
   try {
-    const data = await API.getDetail(slug);
-    // Merge seed + fetched data (fetched lebih prioritas)
-    var merged = Object.assign({}, seedItem || {}, data || {});
-    _renderDetail(merged, slug, container);
+    var data = await API.getDetail(slug);
+    var merged = Object.assign({}, seed||{}, data||{});
+    _renderDetail(merged, slug, c);
   } catch(e) {
-    if (typeof reportError === 'function') reportError('openDetail slug=' + slug, e.message, e.stack);
-    if (!seedItem) {
-      container.innerHTML = '<div class="error-message" style="padding:80px">' +
-        '<h3>Gagal memuat detail</h3><p>' + e.message + '</p>' +
-        '<button class="btn-secondary" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
+    if (typeof reportError==='function') reportError('openDetail slug='+slug, e.message, e.stack);
+    if (!seed) {
+      c.innerHTML='<div class="err" style="padding:80px"><h3>Gagal memuat detail</h3><p>'+esc(e.message)+'</p>'+
+        '<button class="btn btn-ghost" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
     }
   }
 }
 
-function _renderDetailSeed(item, container) {
-  var image = img(item);
-  var title = ttl(item);
-  container.innerHTML =
+function _renderDetailSeed(item, c) {
+  var image = getImg(item)||(ph()+encodeURIComponent(getTitle(item).slice(0,12)));
+  var title = getTitle(item);
+  c.innerHTML =
     '<div class="detail-hero">' +
-    '<div class="detail-hero-bg" style="background-image:url(\'' + image + '\')"></div>' +
-    '<div class="detail-hero-gradient"></div>' +
-    '<div class="detail-content">' +
-    '<div class="detail-poster"><img src="' + image + '" alt="" onerror="this.src=\'https://placehold.co/300x450/16161e/555?text=No+Image\'"></div>' +
-    '<div class="detail-info">' +
-    '<h1 class="detail-title">' + escHtml(title) + '</h1>' +
-    '<div class="loading-spinner" style="padding:20px 0"><div class="spinner"></div></div>' +
+    '<div class="detail-hero-bg" style="background-image:url(\''+esc(image)+'\')"></div>' +
+    '<div class="detail-hero-vignette"></div>' +
+    '<div class="detail-layout">' +
+    '<div class="detail-poster"><img src="'+esc(image)+'" alt="" onerror="this.src=\''+ph()+'No+Image\'"></div>' +
+    '<div class="detail-info"><h1 class="detail-title">'+esc(title)+'</h1>' +
+    '<div class="spinner-wrap" style="padding:16px 0"><div class="spinner"></div></div>' +
     '</div></div></div>';
 }
 
-function _renderDetail(data, slug, container) {
-  var image = img(data);
-  var title = ttl(data);
-  var titleEn = data.english || data.english_title || data.title_english || '';
+function _renderDetail(data, slug, c) {
+  var image = getImg(data)||(ph()+encodeURIComponent(getTitle(data).slice(0,12)));
+  var title = getTitle(data);
+  var titleEn = data.english||data.english_title||data.title_english||'';
   var desc = getSynopsis(data);
-  var score = data.score || data.rating || '';
-  var type = data.type || data.tipe || 'TV';
-  var status = data.status || '';
-  var year = data.year || data.tahun || '';
-  var studio = data.studio || '';
+  var score = data.score||data.rating||'';
+  var type = data.type||data.tipe||'TV';
+  var status = data.status||'';
+  var year = data.year||data.tahun||'';
+  var studio = data.studio||'';
   if (Array.isArray(studio)) studio = studio.map(function(s){ return s.name||s; }).join(', ');
-  var genres = data.genres || data.genre || [];
-  var genreArr = Array.isArray(genres) ? genres : (typeof genres === 'string' ? genres.split(',').map(function(s){return s.trim();}) : []);
+  var genres = data.genres||data.genre||[];
+  var ga = Array.isArray(genres) ? genres : (typeof genres==='string' ? genres.split(',').map(function(s){ return s.trim(); }) : []);
   var eps = getEpisodes(data);
+  _curEps = eps;
+  _curTitle = title;
 
-  _currentEps = eps;
-  _currentTitle = title;
+  var idx = window._cards.length;
+  window._cards.push(data);
 
-  // Seed _cardData entry supaya episode btn bisa trace back
-  var seedIdx = (window._cardData||[]).length;
-  if (!window._cardData) window._cardData = [];
-  window._cardData.push(data);
-
-  var genreHtml = genreArr.slice(0,6).map(function(g){
-    return '<span class="tag">' + escHtml(typeof g === 'string' ? g : (g && (g.name||g.genre||g.slug||''))) + '</span>';
+  var genreHtml = ga.slice(0,6).map(function(g){
+    return '<span class="detail-tag">'+esc(typeof g==='string'?g:(g&&(g.name||g.genre||g.slug||'')))+'</span>';
   }).join('');
 
   var epsHtml = '';
   if (eps.length) {
-    epsHtml = '<h3 style="font-family:var(--font-display);font-size:18px;letter-spacing:1px;margin-bottom:16px">DAFTAR EPISODE (' + eps.length + ')</h3>' +
+    epsHtml = '<div class="detail-section-title">Episode ('+eps.length+')</div>' +
       '<div class="episodes-grid">' +
-      eps.map(function(ep, i){
-        var s = epSlug(ep);
-        var l = epLabel(ep, i);
-        return '<button class="episode-btn" onclick="openWatchEp(' + i + ')">' + escHtml(l) + '</button>';
+      eps.map(function(ep,i){
+        return '<button class="ep-btn" onclick="openWatchEp('+i+')">'+esc(getEpLabel(ep,i))+'</button>';
       }).join('') + '</div>';
   } else {
-    epsHtml = '<div style="text-align:center;padding:40px;color:var(--text-muted)">' +
-      '<p>Daftar episode tidak tersedia dari API ini.</p>' +
-      '<p style="font-size:12px;margin-top:8px">Coba cari judul yang lebih spesifik.</p></div>';
+    epsHtml = '<div class="err"><p>Daftar episode tidak tersedia dari sumber ini.</p></div>';
   }
 
-  container.innerHTML =
+  c.innerHTML =
     '<div class="detail-hero">' +
-    '<div class="detail-hero-bg" style="background-image:url(\'' + image + '\')"></div>' +
-    '<div class="detail-hero-gradient"></div>' +
-    '<div class="detail-content">' +
-    '<div class="detail-poster"><img src="' + image + '" alt="" onerror="this.src=\'https://placehold.co/300x450/16161e/555?text=No+Image\'"></div>' +
+    '<div class="detail-hero-bg" style="background-image:url(\''+esc(image)+'\')"></div>' +
+    '<div class="detail-hero-vignette"></div>' +
+    '<div class="detail-layout">' +
+    '<div class="detail-poster"><img src="'+esc(image)+'" alt="" onerror="this.src=\''+ph()+'No+Image\'"></div>' +
     '<div class="detail-info">' +
-    '<h1 class="detail-title">' + escHtml(title) + '</h1>' +
-    (titleEn ? '<div class="detail-title-en">' + escHtml(titleEn) + '</div>' : '') +
-    '<div class="detail-meta-row">' +
-    (score ? '<span>★ ' + parseFloat(score).toFixed(1) + '</span>' : '') +
-    (type ? '<span>📺 ' + escHtml(type) + '</span>' : '') +
-    (status ? '<span>🔄 ' + escHtml(status) + '</span>' : '') +
-    (year ? '<span>📅 ' + escHtml(String(year)) + '</span>' : '') +
-    (studio ? '<span>🏢 ' + escHtml(studio) + '</span>' : '') +
+    '<h1 class="detail-title">'+esc(title)+'</h1>' +
+    (titleEn ? '<div class="detail-title-en">'+esc(titleEn)+'</div>' : '') +
+    '<div class="detail-meta">' +
+    (score ? '<span>★ '+parseFloat(score).toFixed(1)+'</span>' : '') +
+    (type ? '<span>'+esc(type)+'</span>' : '') +
+    (status ? '<span>'+esc(status)+'</span>' : '') +
+    (year ? '<span>'+esc(String(year))+'</span>' : '') +
+    (studio ? '<span>'+esc(typeof studio==='string'?studio:String(studio))+'</span>' : '') +
     '</div>' +
-    (genreArr.length ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">' + genreHtml + '</div>' : '') +
-    '<div class="hero-actions">' +
-    (eps.length ? '<button class="btn-primary" onclick="openWatchEp(0)">▶ Tonton Sekarang</button>' : '') +
+    (ga.length ? '<div class="detail-tags">'+genreHtml+'</div>' : '') +
+    '<div class="hero-btns">' +
+    (eps.length ? '<button class="btn btn-play" onclick="openWatchEp(0)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Tonton</button>' : '') +
     '</div></div></div></div>' +
     '<div class="detail-body">' +
     '<button class="back-btn" onclick="goBack()">← Kembali</button>' +
-    (desc ? '<h3 style="font-family:var(--font-display);font-size:18px;letter-spacing:1px;margin-bottom:8px">SINOPSIS</h3>' +
-      '<p class="detail-synopsis">' + escHtml(desc) + '</p>' : '') +
+    (desc ? '<div class="detail-section-title">Sinopsis</div><p class="detail-synopsis">'+esc(desc)+'</p>' : '') +
     epsHtml +
     '</div>';
 }
 
-function openWatchEp(idx) {
-  var ep = _currentEps[idx];
+function openWatchEp(i) {
+  var ep = _curEps[i];
   if (!ep) return;
-  var s = epSlug(ep);
-  var l = epLabel(ep, idx);
-  openWatch(s, l, _currentTitle, idx);
+  openWatch(getEpSlug(ep), getEpLabel(ep,i), _curTitle, i);
 }
 
 // ── WATCH ─────────────────────────────────────────────────────────────────────
-
-async function openWatch(slug, label, animeTitle, epIdx) {
+async function openWatch(slug, label, title, epIdx) {
   showPage('watch');
-  var container = document.getElementById('watch-container');
-  container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
-
+  var c = document.getElementById('watch-container');
+  c.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
   try {
-    const data = await API.getEpisode(slug);
-    var embedUrl = data ? getEmbedUrl(data) : '';
+    var data = await API.getEpisode(slug);
+    var embed = data ? getEmbed(data) : '';
     var servers = data ? getServers(data) : [];
-
-    // Jika embed kosong tapi ada serverId, coba getServer
-    if (!embedUrl && data && data.serverId) {
+    if (!embed && data && data.serverId) {
       try {
         var sd = await API.getServer(data.serverId);
-        if (sd) embedUrl = getEmbedUrl(sd);
-      } catch(e) {}
+        if (sd) embed = getEmbed(sd);
+      } catch(e2) {}
     }
+    var videoHtml = embed
+      ? '<iframe src="'+esc(embed)+'" allowfullscreen allow="autoplay;encrypted-media" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>'
+      : '<div class="video-placeholder"><svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9-5 3V9l5 3z"/></svg><p>Video tidak tersedia via embed</p></div>';
 
-    var videoHtml = embedUrl
-      ? '<iframe src="' + embedUrl + '" allowfullscreen allow="autoplay;encrypted-media" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"></iframe>'
-      : '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:12px">' +
-        '<div style="font-size:48px;opacity:0.3">▶</div>' +
-        '<p style="color:rgba(255,255,255,0.3);font-size:14px">Video tidak tersedia melalui embed</p>' +
-        '</div>';
-
-    var serversHtml = '';
-    if (servers.length > 1) {
-      serversHtml = '<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Pilih Server:</p><div class="server-list">' +
-        servers.map(function(s, i) {
-          return '<button class="server-btn ' + (i===0?'active':'') + '" onclick="switchServer(this,\'' + escHtml(s.url) + '\')">' + escHtml(s.name) + '</button>';
+    var svHtml = '';
+    if (servers.length>1) {
+      svHtml = '<p style="font-size:12px;color:var(--gray3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Server</p>' +
+        '<div class="server-list">' +
+        servers.map(function(s,i){
+          return '<button class="sv-btn '+(i===0?'active':'')+'" onclick="switchSv(this,\''+esc(s.url)+'\')">'+esc(s.name)+'</button>';
         }).join('') + '</div>';
     }
 
     var epsHtml = '';
-    if (_currentEps.length) {
-      epsHtml = '<div style="margin-top:24px"><p style="font-family:var(--font-display);font-size:16px;letter-spacing:1px;margin-bottom:12px">EPISODE LAINNYA</p>' +
+    if (_curEps.length) {
+      epsHtml = '<div class="detail-section-title" style="margin-top:24px">Episode Lainnya</div>' +
         '<div class="episodes-grid">' +
-        _currentEps.map(function(ep, i) {
-          var l = epLabel(ep, i);
-          return '<button class="episode-btn ' + (i===epIdx?'current':'') + '" onclick="openWatchEp(' + i + ')">' + escHtml(l) + '</button>';
-        }).join('') + '</div></div>';
+        _curEps.map(function(ep,i){
+          return '<button class="ep-btn '+(i===epIdx?'current':'')+'" onclick="openWatchEp('+i+')">'+esc(getEpLabel(ep,i))+'</button>';
+        }).join('') + '</div>';
     }
 
-    container.innerHTML =
-      '<div class="video-container">' + videoHtml + '</div>' +
+    c.innerHTML =
+      '<div class="video-wrap">'+videoHtml+'</div>' +
       '<div class="watch-body">' +
-      '<button class="back-btn" onclick="goBack()">← Kembali ke Detail</button>' +
-      '<h2 class="watch-title">' + escHtml(animeTitle) + '</h2>' +
-      '<p style="color:var(--text-muted);font-size:14px;margin-bottom:16px">' + escHtml(label) + '</p>' +
-      serversHtml + epsHtml +
+      '<button class="back-btn" onclick="goBack()">← Kembali</button>' +
+      '<h2 class="watch-title">'+esc(title)+'</h2>' +
+      '<p class="watch-ep">'+esc(label)+'</p>' +
+      svHtml + epsHtml +
       '</div>';
   } catch(e) {
-    if (typeof reportError === 'function') reportError('openWatch slug=' + slug, e.message, e.stack);
-    container.innerHTML = '<div class="error-message" style="padding:80px">' +
-      '<h3>Gagal memuat video</h3><p>' + escHtml(e.message) + '</p>' +
-      '<button class="btn-secondary" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
+    if (typeof reportError==='function') reportError('openWatch slug='+slug, e.message, e.stack);
+    c.innerHTML='<div class="err" style="padding:80px"><h3>Gagal memuat video</h3><p>'+esc(e.message)+'</p>'+
+      '<button class="btn btn-ghost" onclick="goBack()" style="margin-top:16px">← Kembali</button></div>';
   }
 }
 
-function switchServer(btn, url) {
-  document.querySelectorAll('.server-btn').forEach(function(b){ b.classList.remove('active'); });
+function switchSv(btn, url) {
+  document.querySelectorAll('.sv-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   var iframe = document.querySelector('#watch-container iframe');
   if (iframe && url) iframe.src = url;
 }
 
-// ── Nav button handlers ───────────────────────────────────────────────────────
-
-document.querySelectorAll('.nav-links a[data-page]').forEach(function(a) {
-  a.addEventListener('click', function(e) {
-    e.preventDefault();
-    var p = a.dataset.page;
-    if (p === 'home') loadHome();
-    else if (p === 'browse') loadBrowsePage('ongoing');
-    else if (p === 'genre') loadGenrePage();
-    else if (p === 'schedule') loadSchedulePage();
-  });
-});
+// ── Alias untuk backward compat (tombol di HTML yang masih pakai nama lama) ──
+var loadHomePage = loadHome;
+var loadBrowsePageAlias = loadBrowsePage;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-window._cardData = [];
+window._cards = [];
 loadHome();
