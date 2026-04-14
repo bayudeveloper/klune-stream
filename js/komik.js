@@ -3,8 +3,7 @@
 // Base: https://klune-stream-api-v2.vercel.app
 // ============================================
 
-const KAPI = 'https://klune-stream-api-
-.vercel.app';
+const KAPI = 'https://klune-stream-api.vercel.app';
 
 async function kapiFetch(path) {
   const res = await fetch(KAPI + path, { signal: AbortSignal.timeout(15000) });
