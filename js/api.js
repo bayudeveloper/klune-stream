@@ -360,3 +360,4 @@ window.API = API;
 window.cleanSlug = cleanSlug;
 window.toList = toList;
 window.toDetail = toDetail;
+ 
