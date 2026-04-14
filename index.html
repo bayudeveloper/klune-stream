@@ -9,135 +9,188 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
-<nav id="navbar">
-  <a href="#" class="nav-logo" onclick="loadHome();return false;">
-    <span class="dot"></span>Klune
-  </a>
-  <div class="nav-cats">
-    <button class="nav-cat active" data-cat="anime" onclick="switchCat('anime')">Anime</button>
-    <button class="nav-cat" data-cat="donghua" onclick="switchCat('donghua')">Donghua</button>
-    <button class="nav-cat" data-cat="film" onclick="switchCat('film')">Film & Drama</button>
-    <button class="nav-cat" data-cat="komik" onclick="switchCat('komik')">Komik</button>
-    <button class="nav-cat" data-cat="manhwa" onclick="switchCat('manhwa')">Manhwa</button>
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sb-logo" onclick="navigate('home')">
+    <span class="sb-dot"></span><span>Klune</span>
   </div>
-  <div class="nav-right">
-    <div class="search-wrap" id="nav-search-bar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search-input" placeholder="Cari..." autocomplete="off">
-    </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Menu</div>
+    <button class="sb-item active" data-page="home" onclick="navigate('home')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      Beranda
+    </button>
   </div>
-</nav>
+
+  <div class="sb-section">
+    <div class="sb-label">Anime</div>
+    <button class="sb-item" data-page="ongoing" onclick="navigate('ongoing')">
+      <span class="sb-icon">▶</span> Ongoing
+    </button>
+    <button class="sb-item" data-page="completed" onclick="navigate('completed')">
+      <span class="sb-icon">✓</span> Completed
+    </button>
+    <button class="sb-item" data-page="movies" onclick="navigate('movies')">
+      <span class="sb-icon">🎬</span> Movies
+    </button>
+    <button class="sb-item" data-page="genre" onclick="navigate('genre')">
+      <span class="sb-icon">🏷</span> Genre
+    </button>
+    <button class="sb-item" data-page="schedule" onclick="navigate('schedule')">
+      <span class="sb-icon">📅</span> Jadwal
+    </button>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Konten</div>
+    <button class="sb-item" data-page="donghua" onclick="navigate('donghua')">
+      <span class="sb-icon">🐉</span> Donghua
+    </button>
+    <button class="sb-item" data-page="film" onclick="navigate('film')">
+      <span class="sb-icon">🎥</span> Film & Drama
+    </button>
+    <button class="sb-item" data-page="komik" onclick="navigate('komik')">
+      <span class="sb-icon">📖</span> Komik
+    </button>
+    <button class="sb-item" data-page="manhwa" onclick="navigate('manhwa')">
+      <span class="sb-icon">📘</span> Manhwa
+    </button>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="topbar-title" id="topbar-title">Beranda</div>
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Cari anime, film, komik..." autocomplete="off">
+  </div>
+</header>
 
 <!-- SEARCH OVERLAY -->
-<div id="search-results-container"></div>
+<div id="search-overlay" onclick="closeSearch()">
+  <div id="search-box" onclick="event.stopPropagation()">
+    <div class="search-box-head">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input-modal" placeholder="Cari anime, film, komik..." autocomplete="off" autofocus>
+      <button onclick="closeSearch()">✕</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
 
-<!-- APP -->
-<div id="app">
+<!-- MAIN -->
+<main id="main">
 
-  <!-- HOME (ANIME) -->
+  <!-- HOME -->
   <div id="page-home" class="page active">
     <section id="hero-section" class="hero">
       <div class="hero-bg"></div><div class="hero-fade"></div>
       <div class="hero-content">
         <div class="hero-badge">✦ Featured</div>
         <h1 class="hero-title">Klune Stream</h1>
-        <p class="hero-desc">Platform streaming terlengkap...</p>
+        <p class="hero-desc">Platform hiburan terlengkap</p>
+        <div class="hero-btns"><div class="btn-ghost" style="opacity:.4">Memuat...</div></div>
       </div>
     </section>
-
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Terbaru</div><span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat semua</span></div><div class="anime-row" id="row-latest"></div></div>
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Populer</div><span class="section-more" onclick="loadBrowsePage('popular')">Lihat semua</span></div><div class="anime-row" id="row-popular"></div></div>
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Sedang Tayang</div><span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat semua</span></div><div class="anime-row" id="row-ongoing"></div></div>
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Movie</div><span class="section-more" onclick="loadBrowsePage('movies')">Lihat semua</span></div><div class="anime-row" id="row-movies"></div></div>
+    <div class="sections-wrap">
+      <div class="section"><div class="section-head"><span class="section-title">Episode Terbaru</span><span class="section-more" onclick="navigate('ongoing')">Lihat semua →</span></div><div class="row" id="row-latest"></div></div>
+      <div class="section"><div class="section-head"><span class="section-title">Terpopuler</span><span class="section-more" onclick="navigate('popular')">Lihat semua →</span></div><div class="row" id="row-popular"></div></div>
+      <div class="section"><div class="section-head"><span class="section-title">Sedang Tayang</span><span class="section-more" onclick="navigate('ongoing')">Lihat semua →</span></div><div class="row" id="row-ongoing"></div></div>
+      <div class="section"><div class="section-head"><span class="section-title">Movie Anime</span><span class="section-more" onclick="navigate('movies')">Lihat semua →</span></div><div class="row" id="row-movies"></div></div>
+    </div>
   </div>
 
-  <!-- DONGHUA HOME -->
-  <div id="page-donghua-home" class="page">
-    <section id="donghua-hero" class="hero">
-      <div class="hero-bg"></div><div class="hero-fade"></div>
-      <div class="hero-content"><div class="hero-badge">🐉 Donghua</div><h1 class="hero-title">Donghua Terbaru</h1></div>
+  <!-- ONGOING -->
+  <div id="page-ongoing" class="page">
+    <div class="pi"><div class="pt">Sedang Tayang</div><div class="pgrid" id="grid-ongoing"></div><div class="pagination" id="pg-ongoing"></div></div>
+  </div>
+
+  <!-- COMPLETED -->
+  <div id="page-completed" class="page">
+    <div class="pi"><div class="pt">Sudah Tamat</div><div class="pgrid" id="grid-completed"></div><div class="pagination" id="pg-completed"></div></div>
+  </div>
+
+  <!-- MOVIES -->
+  <div id="page-movies" class="page">
+    <div class="pi"><div class="pt">Movie Anime</div><div class="pgrid" id="grid-movies"></div><div class="pagination" id="pg-movies"></div></div>
+  </div>
+
+  <!-- POPULAR -->
+  <div id="page-popular" class="page">
+    <div class="pi"><div class="pt">Terpopuler</div><div class="pgrid" id="grid-popular"></div><div class="pagination" id="pg-popular"></div></div>
+  </div>
+
+  <!-- DONGHUA -->
+  <div id="page-donghua" class="page">
+    <section class="hero mini-hero">
+      <div class="hero-bg" id="donghua-hero-bg"></div><div class="hero-fade"></div>
+      <div class="hero-content"><div class="hero-badge">🐉 Donghua</div><h1 class="hero-title">Donghua</h1></div>
     </section>
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Update Terbaru</div><span class="section-more" onclick="loadBrowsePage('donghua')">Lihat semua</span></div><div class="anime-row" id="row-donghua"></div></div>
-    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Ongoing</div></div><div class="anime-row" id="row-donghua-ongoing"></div></div>
-  </div>
-
-  <!-- BROWSE -->
-  <div id="page-browse" class="page">
-    <div class="page-inner">
-      <button class="back-btn" onclick="goBack()">← Kembali</button>
-      <div class="page-title" id="browse-title">Browse Anime</div>
-      <div class="tabs" id="browse-tabs">
-        <button class="tab-btn active" data-tab="ongoing" onclick="loadBrowsePage('ongoing')">Ongoing</button>
-        <button class="tab-btn" data-tab="completed" onclick="loadBrowsePage('completed')">Completed</button>
-        <button class="tab-btn" data-tab="movies" onclick="loadBrowsePage('movies')">Movies</button>
-        <button class="tab-btn" data-tab="popular" onclick="loadBrowsePage('popular')">Popular</button>
-        <button class="tab-btn" data-tab="donghua" onclick="loadBrowsePage('donghua')">Donghua</button>
-      </div>
-      <div class="anime-grid" id="browse-grid"></div>
-      <div class="pagination" id="browse-pg"></div>
+    <div class="sections-wrap">
+      <div class="section"><div class="section-head"><span class="section-title">Update Terbaru</span></div><div class="row" id="row-donghua"></div></div>
+      <div class="section"><div class="section-head"><span class="section-title">Semua Donghua</span></div><div class="pgrid" id="grid-donghua"></div><div class="pagination" id="pg-donghua"></div></div>
     </div>
   </div>
 
   <!-- GENRE -->
   <div id="page-genre" class="page">
-    <div class="page-inner">
-      <button class="back-btn" onclick="goBack()">← Kembali</button>
-      <div class="page-title">Genre</div>
-      <div class="genre-chips" id="genre-list"></div>
-      <div class="anime-grid" id="genre-anime-grid"></div>
+    <div class="pi">
+      <div class="pt">Genre</div>
+      <div class="genre-chips" id="genre-chips"></div>
+      <div class="pgrid" id="grid-genre"></div>
     </div>
   </div>
 
   <!-- SCHEDULE -->
   <div id="page-schedule" class="page">
-    <div class="page-inner">
-      <button class="back-btn" onclick="goBack()">← Kembali</button>
-      <div class="page-title">Jadwal Tayang</div>
+    <div class="pi">
+      <div class="pt">Jadwal Tayang</div>
       <div id="sched-container"></div>
     </div>
   </div>
 
-  <!-- FILM/DRAMA HOME -->
-  <div id="page-film-home" class="page">
-    <div class="page-inner" style="padding-top:32px">
-      <div class="page-title">Film & Drama</div>
-      <div class="page-subtitle">Cari film atau drama untuk ditonton</div>
-      <div style="display:flex;gap:10px;margin-bottom:28px">
-        <input type="text" id="film-search-input" placeholder="Cari judul film atau drama..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchFilm()">
-        <button class="btn btn-red" onclick="searchFilm()">Cari</button>
+  <!-- FILM -->
+  <div id="page-film" class="page">
+    <div class="pi">
+      <div class="pt">Film & Drama</div>
+      <div class="search-bar-page">
+        <input type="text" id="film-q" placeholder="Cari judul film atau drama..." onkeydown="if(event.key==='Enter')doFilmSearch()">
+        <button class="btn-red" onclick="doFilmSearch()">Cari</button>
       </div>
-      <div id="film-search-results"></div>
+      <div id="film-results"><div class="hint-msg">Ketik judul film untuk mulai mencari</div></div>
     </div>
   </div>
 
-  <!-- KOMIK HOME -->
-  <div id="page-komik-home" class="page">
-    <div class="page-inner" style="padding-top:32px">
-      <div class="page-title">Komik</div>
-      <div class="page-subtitle">Baca komik Indonesia & Jepang</div>
-      <div style="display:flex;gap:10px;margin-bottom:28px">
-        <input type="text" id="komik-search-input" placeholder="Cari judul komik..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchKomik()">
-        <button class="btn btn-red" onclick="searchKomik()">Cari</button>
+  <!-- KOMIK -->
+  <div id="page-komik" class="page">
+    <div class="pi">
+      <div class="pt">Komik</div>
+      <div class="search-bar-page">
+        <input type="text" id="komik-q" placeholder="Cari judul komik..." onkeydown="if(event.key==='Enter')doKomikSearch()">
+        <button class="btn-red" onclick="doKomikSearch()">Cari</button>
       </div>
-      <div id="komik-search-results"></div>
+      <div id="komik-results"><div class="hint-msg">Ketik judul komik untuk mulai mencari</div></div>
     </div>
   </div>
 
-  <!-- MANHWA HOME -->
-  <div id="page-manhwa-home" class="page">
-    <div class="page-inner" style="padding-top:32px">
-      <div class="page-title">Manhwa</div>
-      <div class="page-subtitle">Baca manhwa & webtoon Korea</div>
-      <div style="display:flex;gap:10px;margin-bottom:28px">
-        <input type="text" id="manhwa-search-input" placeholder="Cari judul manhwa / webtoon..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchManhwa()">
-        <button class="btn btn-red" onclick="searchManhwa()">Cari</button>
+  <!-- MANHWA -->
+  <div id="page-manhwa" class="page">
+    <div class="pi">
+      <div class="pt">Manhwa</div>
+      <div class="search-bar-page">
+        <input type="text" id="manhwa-q" placeholder="Cari judul manhwa / webtoon..." onkeydown="if(event.key==='Enter')doManhwaSearch()">
+        <button class="btn-red" onclick="doManhwaSearch()">Cari</button>
       </div>
-      <div id="manhwa-search-results"></div>
+      <div id="manhwa-results"><div class="hint-msg">Ketik judul manhwa untuk mulai mencari</div></div>
     </div>
   </div>
 
-  <!-- DETAIL (anime/film/komik/manhwa) -->
+  <!-- DETAIL -->
   <div id="page-detail" class="page">
     <div id="detail-container"></div>
   </div>
@@ -147,41 +200,10 @@
     <div id="watch-container"></div>
   </div>
 
-</div>
+</main>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-grid">
-    <div>
-      <div class="footer-logo"><span class="dot"></span>Klune Stream</div>
-      <p class="footer-desc">Platform hiburan digital — nonton anime, donghua, film, baca komik & manhwa gratis.</p>
-    </div>
-    <div>
-      <div class="footer-col-title">Navigasi</div>
-      <ul class="footer-links">
-        <li><a onclick="switchCat('anime')">Anime</a></li>
-        <li><a onclick="switchCat('donghua')">Donghua</a></li>
-        <li><a onclick="switchCat('film')">Film & Drama</a></li>
-        <li><a onclick="switchCat('komik')">Komik</a></li>
-        <li><a onclick="switchCat('manhwa')">Manhwa</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="footer-col-title">Anime</div>
-      <ul class="footer-links">
-        <li><a onclick="loadBrowsePage('ongoing')">Ongoing</a></li>
-        <li><a onclick="loadBrowsePage('completed')">Completed</a></li>
-        <li><a onclick="loadBrowsePage('movies')">Movies</a></li>
-        <li><a onclick="loadGenrePage()">Genre</a></li>
-        <li><a onclick="loadSchedulePage()">Jadwal</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <span>© 2026 Klune Stream</span>
-    <span>By Bayu Official</span>
-  </div>
-</footer>
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div id="sb-overlay" onclick="toggleSidebar()"></div>
 
 <script src="js/error-reporter.js"></script>
 <script src="js/api.js"></script>
