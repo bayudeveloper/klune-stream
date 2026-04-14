@@ -4,25 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Klune Stream</title>
-  <meta name="description" content="Nonton anime & donghua sub Indonesia gratis — Klune Stream">
+  <meta name="description" content="Nonton anime, donghua, film, baca komik & manhwa — Klune Stream">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <!-- NAVBAR -->
 <nav id="navbar">
-  <a href="#" class="nav-logo" onclick="loadHome();return false;">Klune<span>Stream</span></a>
-  <ul class="nav-links">
-    <li><a href="#" data-page="home" class="active">Beranda</a></li>
-    <li><a href="#" data-page="browse">Browse</a></li>
-    <li><a href="#" data-page="donghua">Donghua</a></li>
-    <li><a href="#" data-page="genre">Genre</a></li>
-    <li><a href="#" data-page="schedule">Jadwal</a></li>
-  </ul>
+  <a href="#" class="nav-logo" onclick="loadHome();return false;">
+    <span class="dot"></span>Klune
+  </a>
+  <div class="nav-cats">
+    <button class="nav-cat active" data-cat="anime" onclick="switchCat('anime')">Anime</button>
+    <button class="nav-cat" data-cat="donghua" onclick="switchCat('donghua')">Donghua</button>
+    <button class="nav-cat" data-cat="film" onclick="switchCat('film')">Film & Drama</button>
+    <button class="nav-cat" data-cat="komik" onclick="switchCat('komik')">Komik</button>
+    <button class="nav-cat" data-cat="manhwa" onclick="switchCat('manhwa')">Manhwa</button>
+  </div>
   <div class="nav-right">
     <div class="search-wrap" id="nav-search-bar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search-input" placeholder="Judul anime..." autocomplete="off">
+      <input type="text" id="search-input" placeholder="Cari..." autocomplete="off">
     </div>
   </div>
 </nav>
@@ -33,64 +35,39 @@
 <!-- APP -->
 <div id="app">
 
-  <!-- HOME -->
+  <!-- HOME (ANIME) -->
   <div id="page-home" class="page active">
     <section id="hero-section" class="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-vignette"></div>
+      <div class="hero-bg"></div><div class="hero-fade"></div>
       <div class="hero-content">
+        <div class="hero-badge">✦ Featured</div>
         <h1 class="hero-title">Klune Stream</h1>
-        <p class="hero-desc">Memuat konten...</p>
+        <p class="hero-desc">Platform streaming terlengkap...</p>
       </div>
     </section>
 
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Episode Terbaru</div>
-        <span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat Semua</span>
-      </div>
-      <div class="anime-row" id="row-latest"></div>
-    </div>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Terbaru</div><span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat semua</span></div><div class="anime-row" id="row-latest"></div></div>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Populer</div><span class="section-more" onclick="loadBrowsePage('popular')">Lihat semua</span></div><div class="anime-row" id="row-popular"></div></div>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Sedang Tayang</div><span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat semua</span></div><div class="anime-row" id="row-ongoing"></div></div>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Movie</div><span class="section-more" onclick="loadBrowsePage('movies')">Lihat semua</span></div><div class="anime-row" id="row-movies"></div></div>
+  </div>
 
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Terpopuler</div>
-        <span class="section-more" onclick="loadBrowsePage('popular')">Lihat Semua</span>
-      </div>
-      <div class="anime-row" id="row-popular"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Sedang Tayang</div>
-        <span class="section-more" onclick="loadBrowsePage('ongoing')">Lihat Semua</span>
-      </div>
-      <div class="anime-row" id="row-ongoing"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Donghua</div>
-        <span class="section-more" onclick="loadBrowsePage('donghua')">Lihat Semua</span>
-      </div>
-      <div class="anime-row" id="row-donghua"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Movie</div>
-        <span class="section-more" onclick="loadBrowsePage('movies')">Lihat Semua</span>
-      </div>
-      <div class="anime-row" id="row-movies"></div>
-    </div>
+  <!-- DONGHUA HOME -->
+  <div id="page-donghua-home" class="page">
+    <section id="donghua-hero" class="hero">
+      <div class="hero-bg"></div><div class="hero-fade"></div>
+      <div class="hero-content"><div class="hero-badge">🐉 Donghua</div><h1 class="hero-title">Donghua Terbaru</h1></div>
+    </section>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Update Terbaru</div><span class="section-more" onclick="loadBrowsePage('donghua')">Lihat semua</span></div><div class="anime-row" id="row-donghua"></div></div>
+    <div class="section"><div class="section-head"><div class="section-title"><span class="dot"></span>Ongoing</div></div><div class="anime-row" id="row-donghua-ongoing"></div></div>
   </div>
 
   <!-- BROWSE -->
   <div id="page-browse" class="page">
     <div class="page-inner">
-      <button class="back-btn" onclick="loadHome()">← Beranda</button>
-      <div class="page-title">Browse</div>
-      <div class="tabs">
+      <button class="back-btn" onclick="goBack()">← Kembali</button>
+      <div class="page-title" id="browse-title">Browse Anime</div>
+      <div class="tabs" id="browse-tabs">
         <button class="tab-btn active" data-tab="ongoing" onclick="loadBrowsePage('ongoing')">Ongoing</button>
         <button class="tab-btn" data-tab="completed" onclick="loadBrowsePage('completed')">Completed</button>
         <button class="tab-btn" data-tab="movies" onclick="loadBrowsePage('movies')">Movies</button>
@@ -105,7 +82,7 @@
   <!-- GENRE -->
   <div id="page-genre" class="page">
     <div class="page-inner">
-      <button class="back-btn" onclick="loadHome()">← Beranda</button>
+      <button class="back-btn" onclick="goBack()">← Kembali</button>
       <div class="page-title">Genre</div>
       <div class="genre-chips" id="genre-list"></div>
       <div class="anime-grid" id="genre-anime-grid"></div>
@@ -115,18 +92,57 @@
   <!-- SCHEDULE -->
   <div id="page-schedule" class="page">
     <div class="page-inner">
-      <button class="back-btn" onclick="loadHome()">← Beranda</button>
+      <button class="back-btn" onclick="goBack()">← Kembali</button>
       <div class="page-title">Jadwal Tayang</div>
       <div id="sched-container"></div>
     </div>
   </div>
 
-  <!-- DETAIL -->
+  <!-- FILM/DRAMA HOME -->
+  <div id="page-film-home" class="page">
+    <div class="page-inner" style="padding-top:32px">
+      <div class="page-title">Film & Drama</div>
+      <div class="page-subtitle">Cari film atau drama untuk ditonton</div>
+      <div style="display:flex;gap:10px;margin-bottom:28px">
+        <input type="text" id="film-search-input" placeholder="Cari judul film atau drama..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchFilm()">
+        <button class="btn btn-red" onclick="searchFilm()">Cari</button>
+      </div>
+      <div id="film-search-results"></div>
+    </div>
+  </div>
+
+  <!-- KOMIK HOME -->
+  <div id="page-komik-home" class="page">
+    <div class="page-inner" style="padding-top:32px">
+      <div class="page-title">Komik</div>
+      <div class="page-subtitle">Baca komik Indonesia & Jepang</div>
+      <div style="display:flex;gap:10px;margin-bottom:28px">
+        <input type="text" id="komik-search-input" placeholder="Cari judul komik..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchKomik()">
+        <button class="btn btn-red" onclick="searchKomik()">Cari</button>
+      </div>
+      <div id="komik-search-results"></div>
+    </div>
+  </div>
+
+  <!-- MANHWA HOME -->
+  <div id="page-manhwa-home" class="page">
+    <div class="page-inner" style="padding-top:32px">
+      <div class="page-title">Manhwa</div>
+      <div class="page-subtitle">Baca manhwa & webtoon Korea</div>
+      <div style="display:flex;gap:10px;margin-bottom:28px">
+        <input type="text" id="manhwa-search-input" placeholder="Cari judul manhwa / webtoon..." style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;color:var(--g1);font-family:var(--font);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')searchManhwa()">
+        <button class="btn btn-red" onclick="searchManhwa()">Cari</button>
+      </div>
+      <div id="manhwa-search-results"></div>
+    </div>
+  </div>
+
+  <!-- DETAIL (anime/film/komik/manhwa) -->
   <div id="page-detail" class="page">
     <div id="detail-container"></div>
   </div>
 
-  <!-- WATCH -->
+  <!-- WATCH / READER -->
   <div id="page-watch" class="page">
     <div id="watch-container"></div>
   </div>
@@ -137,44 +153,39 @@
 <footer>
   <div class="footer-grid">
     <div>
-      <div class="footer-logo">KluneStream</div>
-      <p class="footer-desc">Platform streaming anime & donghua sub Indonesia. Nonton gratis tanpa iklan.</p>
+      <div class="footer-logo"><span class="dot"></span>Klune Stream</div>
+      <p class="footer-desc">Platform hiburan digital — nonton anime, donghua, film, baca komik & manhwa gratis.</p>
     </div>
     <div>
-      <div class="footer-col-title">Jelajahi</div>
+      <div class="footer-col-title">Navigasi</div>
       <ul class="footer-links">
-        <li><a onclick="loadHome()">Beranda</a></li>
+        <li><a onclick="switchCat('anime')">Anime</a></li>
+        <li><a onclick="switchCat('donghua')">Donghua</a></li>
+        <li><a onclick="switchCat('film')">Film & Drama</a></li>
+        <li><a onclick="switchCat('komik')">Komik</a></li>
+        <li><a onclick="switchCat('manhwa')">Manhwa</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Anime</div>
+      <ul class="footer-links">
         <li><a onclick="loadBrowsePage('ongoing')">Ongoing</a></li>
         <li><a onclick="loadBrowsePage('completed')">Completed</a></li>
         <li><a onclick="loadBrowsePage('movies')">Movies</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="footer-col-title">Kategori</div>
-      <ul class="footer-links">
-        <li><a onclick="loadBrowsePage('donghua')">Donghua</a></li>
         <li><a onclick="loadGenrePage()">Genre</a></li>
         <li><a onclick="loadSchedulePage()">Jadwal</a></li>
-        <li><a onclick="loadBrowsePage('popular')">Terpopuler</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="footer-col-title">Info</div>
-      <ul class="footer-links">
-        <li><a>Tentang</a></li>
-        <li><a>FAQ</a></li>
-        <li><a>Kontak</a></li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2025 Klune Stream</span>
-    <span>Powered by sankavollerei.com</span>
+    <span>© 2026 Klune Stream</span>
+    <span>By Bayu Official</span>
   </div>
 </footer>
 
 <script src="js/error-reporter.js"></script>
 <script src="js/api.js"></script>
+<script src="js/komik.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
