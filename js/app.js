@@ -125,8 +125,8 @@ function navigate(page){
   else if(page==='genre')loadGenrePage();
   else if(page==='schedule')loadSchedulePage();
   else if(page==='film'){showPage('film');document.getElementById('film-results').innerHTML='<div class="hint-msg">Ketik judul film untuk mulai mencari</div>'}
-  else if(page==='komik'){showPage('komik');document.getElementById('komik-results').innerHTML='<div class="hint-msg">Ketik judul komik untuk mulai mencari</div>'}
-  else if(page==='manhwa'){showPage('manhwa');document.getElementById('manhwa-results').innerHTML='<div class="hint-msg">Ketik judul manhwa untuk mulai mencari</div>'}
+  else if(page==='komik')loadKomikPage();
+  else if(page==='manhwa')loadManhwaPage();
   closeSidebar();
 }
 
@@ -367,71 +367,177 @@ async function watchFilmEp(url,label,title,idx){
 }
 
 // ── KOMIK ──────────────────────────────────────────────────────────────────────
-async function doKomikSearch(){
-  var q=document.getElementById('komik-q').value.trim();if(!q)return;
-  var r=document.getElementById('komik-results');r.innerHTML='<div class="sp-wrap"><div class="sp"></div></div>';
-  try{
-    window._cards=[];var list=await KomikAPI.search(q);
-    if(!list||!list.length){r.innerHTML='<div class="err"><p>Tidak ada hasil</p></div>';return}
-    r.innerHTML='<div class="pgrid">'+list.map(function(i){return card(i,'komik')}).join('')+'</div>';
-  }catch(e){r.innerHTML='<div class="err"><p>Gagal: '+esc(e.message)+'</p></div>'}
+function loadKomikPage() {
+  window._cards = [];
+  showPage('komik');
+  document.getElementById('komik-results').innerHTML = '';
+  var gs = document.getElementById('komik-grid-section');
+  if (gs) gs.style.display = 'none';
+  // homepage rows
+  _loadRow('row-komik-popular', function() { return KomikAPI.getPopular(1); }, 'komik');
+  _loadRow('row-komik-latest', function() { return KomikAPI.getLatest(1); }, 'komik');
+  _loadRow('row-komik-trending', function() { return KomikAPI.getTrending(); }, 'komik');
 }
-function openKomikDetail(idx){var item=window._cards[idx];if(!item)return;_loadKomikDetail(item)}
-async function _loadKomikDetail(item){
-  // item sudah punya data dari search, tapi kita perlu chapters
-  // endpoint download per chapter, bukan detail - so we show item data + download button
-  showPage('detail');var c=document.getElementById('detail-container');
-  var img=gImg(item)||(ph()+encodeURIComponent(gTitle(item).slice(0,14)));var title=gTitle(item);var desc=item.desc||gSyn(item)||'';var slug=item.slug||item.url||item.link||'';
-  c.innerHTML='<div class="detail-body" style="padding-top:28px"><button class="back-btn" onclick="goBack()">← Kembali</button><div class="komik-layout"><div class="komik-cover"><img src="'+esc(img)+'" onerror="this.src=\''+ph()+'No+Image\'"></div><div class="komik-info"><h1 class="detail-title" style="font-size:1.6rem">'+esc(title)+'</h1>'+(desc?'<p class="detail-synopsis" style="margin-top:10px;font-size:13px">'+esc(desc.slice(0,250))+'</p>':'')+'<div style="margin-top:16px"><div class="ds-title">Baca / Download</div><p style="font-size:12px;color:var(--g3);margin-top:6px;margin-bottom:12px">Masukkan URL chapter dari komiku.org untuk download PDF</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="komik-ch-url" placeholder="https://komiku.org/..." value="'+esc(slug)+'" style="flex:1;min-width:200px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--g1);font-family:var(--font);font-size:13px;outline:none"><button class="btn-red" onclick="downloadKomikPDF()">⬇ Download PDF</button></div><div id="komik-dl-result" style="margin-top:12px"></div></div></div></div></div>';
+
+function loadKomikPopular() {
+  _showKomikGrid('Komik Populer', 'popular', 1);
 }
-async function downloadKomikPDF(){
-  var url=document.getElementById('komik-ch-url').value.trim();if(!url){alert('Masukkan URL chapter');return}
-  var r=document.getElementById('komik-dl-result');r.innerHTML='<div class="sp-wrap" style="padding:16px"><div class="sp"></div><p style="font-size:12px;color:var(--g3);margin-top:8px">Mengunduh chapter... (bisa 20-30 detik)</p></div>';
-  try{
-    var d=await KomikAPI.download(url);
-    if(d.base64pdf||d.base64||d.pdf){
-      var base64=d.base64pdf||d.base64||d.pdf;var fileName=d.fileName||d.filename||'chapter.pdf';
-      var link=document.createElement('a');link.href='data:application/pdf;base64,'+base64;link.download=fileName;link.click();
-      r.innerHTML='<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:var(--r);padding:12px 16px;font-size:13px;color:#22c55e">✓ Download berhasil! '+esc(d.title||fileName)+' ('+esc(String(d.pages||'?'))+' halaman)</div>';
-    } else {
-      r.innerHTML='<div class="err"><p>Gagal: '+esc(JSON.stringify(d).slice(0,200))+'</p></div>';
+
+function loadKomikLatest() {
+  _showKomikGrid('Komik Terbaru', 'latest', 1);
+}
+
+async function _showKomikGrid(title, type, page) {
+  window._cards = [];
+  var gs = document.getElementById('komik-grid-section');
+  var gt = document.getElementById('komik-grid-title');
+  var sections = document.getElementById('komik-results').parentElement;
+  if (gs) { gs.style.display = ''; gt.textContent = title; }
+  var grid = document.getElementById('grid-komik');
+  var pgEl = document.getElementById('pg-komik');
+  grid.innerHTML = skels(18, true);
+  try {
+    var list = type === 'popular' ? await KomikAPI.getPopular(page) : await KomikAPI.getLatest(page);
+    if (!list || !list.length) { grid.innerHTML = '<div class="err"><p>Tidak ada data</p></div>'; return; }
+    grid.innerHTML = list.map(function(i) { return card(i, 'komik'); }).join('');
+    if (pgEl) renderPg(pgEl, page, 20, 'komik_' + type);
+  } catch(e) { grid.innerHTML = '<div class="err"><p>Gagal memuat</p></div>'; }
+}
+
+function changePgKomik(subtype, page) {
+  if (page < 1) return;
+  var type = subtype.replace('komik_', '');
+  _showKomikGrid(type === 'popular' ? 'Komik Populer' : 'Komik Terbaru', type, page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function doKomikSearch() {
+  var q = document.getElementById('komik-q').value.trim(); if (!q) return;
+  var r = document.getElementById('komik-results');
+  r.innerHTML = '<div class="sp-wrap"><div class="sp"></div></div>';
+  // sembunyikan home sections saat search
+  ['komik-home-popular-section','komik-home-latest-section','komik-home-trending-section'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  try {
+    window._cards = []; var list = await KomikAPI.search(q);
+    if (!list || !list.length) { r.innerHTML = '<div class="err"><p>Tidak ada hasil untuk "' + esc(q) + '"</p></div>'; return; }
+    r.innerHTML = '<div class="pgrid">' + list.map(function(i) { return card(i, 'komik'); }).join('') + '</div>';
+  } catch(e) { r.innerHTML = '<div class="err"><p>Gagal: ' + esc(e.message) + '</p></div>'; }
+}
+
+function _clearKomikSearch() {
+  document.getElementById('komik-results').innerHTML = '';
+  ['komik-home-popular-section','komik-home-latest-section','komik-home-trending-section'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = '';
+  });
+}
+
+function openKomikDetail(idx) { var item = window._cards[idx]; if (!item) return; _loadKomikDetail(item.slug || item.link || item.url || '', item); }
+
+async function _loadKomikDetail(slug, seed) {
+  showPage('detail'); var c = document.getElementById('detail-container');
+  c.innerHTML = '<div class="sp-wrap" style="min-height:380px"><div class="sp"></div></div>';
+  if (seed) _renderComikSeed(seed, c);
+  try {
+    var data = await KomikAPI.getDetail(slug);
+    _renderKomikDetail(data, slug, c);
+  } catch(e) {
+    if (seed) _renderKomikDetail(seed, slug, c);
+    else c.innerHTML = '<div class="err" style="padding:80px"><h3>Gagal</h3><button class="btn-ghost" onclick="goBack()" style="margin-top:14px">← Kembali</button></div>';
+  }
+}
+
+function _renderComikSeed(item, c) {
+  var img = gImg(item) || (ph() + encodeURIComponent(gTitle(item).slice(0, 14)));
+  c.innerHTML = '<div class="detail-hero"><div class="detail-hero-bg" style="background-image:url(\'' + esc(img) + '\')"></div><div class="detail-hero-vignette"></div><div class="detail-layout"><div class="detail-poster"><img src="' + esc(img) + '" onerror="this.src=\'' + ph() + 'No+Image\'"></div><div class="detail-info"><h1 class="detail-title">' + esc(gTitle(item)) + '</h1><div class="sp-wrap" style="padding:16px 0"><div class="sp"></div></div></div></div></div>';
+}
+
+var _curKomikSlug = '';
+function _renderKomikDetail(data, slug, c) {
+  _curKomikSlug = slug;
+  var img = data.image || gImg(data) || (ph() + encodeURIComponent((data.title || 'Komik').slice(0, 14)));
+  var title = data.title || gTitle(data) || '';
+  var desc = data.desc || gSyn(data) || '';
+  var status = data.status || ''; var type = data.type || ''; var score = data.score || ''; var author = data.author || '';
+  var genres = data.genres || []; var ga = Array.isArray(genres) ? genres : (typeof genres === 'string' ? genres.split(',').map(function(s){return s.trim();}) : []);
+  var chapters = data.chapters || [];
+
+  var tagsHtml = ga.slice(0, 6).map(function(g) { return '<span class="dtag">' + esc(typeof g === 'string' ? g : (g && (g.name || g.genre || g.slug || ''))) + '</span>'; }).join('');
+  var chHtml = chapters.length
+    ? '<div class="ds-title" style="margin-top:20px">Chapter (' + chapters.length + ')</div><div class="eps-grid">' + chapters.map(function(ch, i) {
+        var s = ch.slug || ch.link || ch.url || ch.id || '';
+        var l = ch.title || ch.name || ch.chapter || ('Chapter ' + (i + 1));
+        return '<button class="ep-btn" onclick="readKomikChapter(\'' + esc(s) + '\',\'' + esc(l) + '\',\'' + esc(title) + '\',' + i + ')">' + esc(l) + '</button>';
+      }).join('') + '</div>'
+    : '<div class="err" style="padding:16px 0"><p>Chapter tidak tersedia dari sumber ini</p></div>';
+
+  c.innerHTML = '<div class="detail-hero"><div class="detail-hero-bg" style="background-image:url(\'' + esc(img) + '\')"></div><div class="detail-hero-vignette"></div><div class="detail-layout"><div class="detail-poster"><img src="' + esc(img) + '" onerror="this.src=\'' + ph() + 'No+Image\'"></div><div class="detail-info"><h1 class="detail-title">' + esc(title) + '</h1><div class="detail-meta">' + (score ? '<span>★ ' + parseFloat(score).toFixed(1) + '</span>' : '') + (type ? '<span>' + esc(type) + '</span>' : '') + (status ? '<span>' + esc(status) + '</span>' : '') + (author ? '<span>' + esc(author) + '</span>' : '') + '</div>' + (ga.length ? '<div class="detail-tags">' + tagsHtml + '</div>' : '') + '</div></div></div><div class="detail-body"><button class="back-btn" onclick="goBack()">← Kembali</button>' + (desc ? '<div class="ds-title">Sinopsis</div><p class="detail-synopsis">' + esc(desc) + '</p>' : '') + chHtml + '</div>';
+}
+
+var _curKomikChapters = [], _curKomikTitle = '';
+async function readKomikChapter(slug, label, title, chIdx) {
+  showPage('watch'); var c = document.getElementById('watch-container');
+  _curKomikTitle = title;
+  c.innerHTML = '<div class="sp-wrap"><div class="sp"></div></div>';
+  try {
+    var data = await KomikAPI.readChapter(slug);
+    var images = data.images || [];
+    var imgHtml = images.length
+      ? images.map(function(img, i) {
+          var src = typeof img === 'string' ? img : (img.url || img.src || img.image || img.link || '');
+          return '<img src="' + esc(src) + '" loading="lazy" style="width:100%;display:block;margin:0 auto" onerror="this.style.display=\'none\'">';
+        }).join('')
+      : '<div class="video-ph"><p>Gambar tidak tersedia</p></div>';
+    var navHtml = '';
+    if (data.prev || data.next) {
+      navHtml = '<div style="display:flex;gap:8px;justify-content:center;margin-top:20px">'
+        + (data.prev ? '<button class="btn-ghost" onclick="readKomikChapter(\'' + esc(data.prev) + '\',\'Prev\',\'' + esc(title) + '\',-1)">← Prev</button>' : '')
+        + (data.next ? '<button class="btn-red" onclick="readKomikChapter(\'' + esc(data.next) + '\',\'Next\',\'' + esc(title) + '\',-1)">Next →</button>' : '')
+        + '</div>';
     }
-  }catch(e){r.innerHTML='<div class="err"><p>Gagal: '+esc(e.message)+'</p></div>'}
+    c.innerHTML = '<div class="watch-body"><button class="back-btn" onclick="goBack()">← Kembali</button><h2 class="watch-title">' + esc(title) + '</h2><p class="watch-ep">' + esc(label) + '</p></div><div style="max-width:800px;margin:0 auto">' + imgHtml + '</div>' + navHtml;
+  } catch(e) {
+    c.innerHTML = '<div class="err" style="padding:80px"><h3>Gagal memuat chapter</h3><p>' + esc(e.message) + '</p><button class="btn-ghost" onclick="goBack()" style="margin-top:14px">← Kembali</button></div>';
+  }
 }
 
 // ── MANHWA ─────────────────────────────────────────────────────────────────────
-async function doManhwaSearch(){
-  var q=document.getElementById('manhwa-q').value.trim();if(!q)return;
-  var r=document.getElementById('manhwa-results');r.innerHTML='<div class="sp-wrap"><div class="sp"></div></div>';
-  try{
-    window._cards=[];var list=await ManhwaAPI.search(q);
-    if(!list||!list.length){r.innerHTML='<div class="err"><p>Tidak ada hasil</p></div>';return}
-    r.innerHTML='<div class="pgrid">'+list.map(function(i){return card(i,'manhwa')}).join('')+'</div>';
-  }catch(e){r.innerHTML='<div class="err"><p>Gagal: '+esc(e.message)+'</p></div>'}
+function loadManhwaPage() {
+  window._cards = [];
+  showPage('manhwa');
+  document.getElementById('manhwa-results').innerHTML = '';
+  _loadRow('row-manhwa-popular', function() { return ManhwaAPI.getPopular(1); }, 'manhwa');
+  _loadRow('row-manhwa-latest', function() { return ManhwaAPI.getLatest(1); }, 'manhwa');
 }
-function openManhwaDetail(idx){var item=window._cards[idx];if(!item)return;_loadManhwaDetail(item)}
-function _loadManhwaDetail(item){
-  showPage('detail');var c=document.getElementById('detail-container');
-  var img=gImg(item)||(ph()+encodeURIComponent(gTitle(item).slice(0,14)));var title=gTitle(item);var desc=item.desc||item.synopsis||'';var author=item.author||'';
-  var episodes=Array.isArray(item.episodes)?item.episodes:[];
-  var epsHtml=episodes.length?'<div class="ds-title" style="margin-top:20px">Episode / Chapter ('+episodes.length+')</div><div class="eps-grid">'+episodes.map(function(ep,i){var l=ep.title||('Episode '+(i+1));return'<button class="ep-btn" onclick="downloadManhwaEp(\''+esc(title)+'\','+ep.index+',\''+esc(l)+'\')">'+esc(l)+'</button>'}).join('')+'</div>'
-    :'<div style="margin-top:16px"><div class="ds-title">Download Episode</div><p style="font-size:12px;color:var(--g3);margin-top:6px;margin-bottom:12px">Masukkan judul & nomor episode</p><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="mh-q" placeholder="Judul manhwa" value="'+esc(title)+'" style="flex:2;min-width:160px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--g1);font-family:var(--font);font-size:13px;outline:none"><input type="number" id="mh-ep" placeholder="Ep" value="1" style="width:70px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--g1);font-family:var(--font);font-size:13px;outline:none"><button class="btn-red" onclick="downloadManhwaManual()">⬇ Download PDF</button></div><div id="mh-dl-result" style="margin-top:12px"></div></div>';
-  c.innerHTML='<div class="detail-body" style="padding-top:28px"><button class="back-btn" onclick="goBack()">← Kembali</button><div class="komik-layout"><div class="komik-cover"><img src="'+esc(img)+'" onerror="this.src=\''+ph()+'No+Image\'"></div><div class="komik-info"><h1 class="detail-title" style="font-size:1.6rem">'+esc(title)+'</h1>'+(author?'<p style="color:var(--g3);font-size:12px;margin-top:4px">oleh '+esc(author)+'</p>':'')+(desc?'<p class="detail-synopsis" style="margin-top:10px;font-size:13px">'+esc(desc.slice(0,200))+'</p>':'')+'</div></div>'+epsHtml+'</div>';
+
+async function doManhwaSearch() {
+  var q = document.getElementById('manhwa-q').value.trim(); if (!q) return;
+  var r = document.getElementById('manhwa-results');
+  r.innerHTML = '<div class="sp-wrap"><div class="sp"></div></div>';
+  ['manhwa-home-popular-section','manhwa-home-latest-section'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  try {
+    window._cards = []; var list = await ManhwaAPI.search(q);
+    if (!list || !list.length) { r.innerHTML = '<div class="err"><p>Tidak ada hasil untuk "' + esc(q) + '"</p></div>'; return; }
+    r.innerHTML = '<div class="pgrid">' + list.map(function(i) { return card(i, 'manhwa'); }).join('') + '</div>';
+  } catch(e) { r.innerHTML = '<div class="err"><p>Gagal: ' + esc(e.message) + '</p></div>'; }
 }
-async function downloadManhwaEp(q,ep,label){
-  var r=document.getElementById('mh-dl-result');
-  if(!r){// create inline message
-    var msg=document.createElement('div');msg.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:14px 20px;font-size:13px;color:var(--g1);z-index:999';msg.textContent='Mengunduh '+label+'...';document.body.appendChild(msg);var cleanup=function(){document.body.removeChild(msg)};
-    try{var d=await ManhwaAPI.downloadEp(q,ep);if(d.base64pdf||d.base64||d.pdf){var b=d.base64pdf||d.base64||d.pdf;var fn=d.fileName||d.filename||'episode.pdf';var a=document.createElement('a');a.href='data:application/pdf;base64,'+b;a.download=fn;a.click();msg.style.color='#22c55e';msg.textContent='✓ Download berhasil! '+fn}else{msg.style.color='#ef4444';msg.textContent='Gagal download'}setTimeout(cleanup,4000)}catch(e){msg.style.color='#ef4444';msg.textContent='Gagal: '+e.message;setTimeout(cleanup,4000)}
-    return;
+
+function openManhwaDetail(idx) { var item = window._cards[idx]; if (!item) return; _loadManhwaDetail(item.slug || item.link || item.url || '', item); }
+
+async function _loadManhwaDetail(slug, seed) {
+  showPage('detail'); var c = document.getElementById('detail-container');
+  c.innerHTML = '<div class="sp-wrap" style="min-height:380px"><div class="sp"></div></div>';
+  if (seed) _renderComikSeed(seed, c);
+  try {
+    var data = await ManhwaAPI.getDetail(slug);
+    _renderKomikDetail(data, slug, c);
+  } catch(e) {
+    if (seed) _renderKomikDetail(seed, slug, c);
+    else c.innerHTML = '<div class="err" style="padding:80px"><h3>Gagal</h3><button class="btn-ghost" onclick="goBack()" style="margin-top:14px">← Kembali</button></div>';
   }
-  r.innerHTML='<div class="sp-wrap" style="padding:16px"><div class="sp"></div><p style="font-size:12px;color:var(--g3);margin-top:8px">Mengunduh episode...</p></div>';
-  try{var d=await ManhwaAPI.downloadEp(q,ep);if(d.base64pdf||d.base64||d.pdf){var b=d.base64pdf||d.base64||d.pdf;var fn=d.fileName||d.filename||'episode.pdf';var a=document.createElement('a');a.href='data:application/pdf;base64,'+b;a.download=fn;a.click();r.innerHTML='<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:var(--r);padding:12px 16px;font-size:13px;color:#22c55e">✓ Download berhasil! '+esc(fn)+'</div>'}else{r.innerHTML='<div class="err"><p>Gagal download</p></div>'}}
-  catch(e){r.innerHTML='<div class="err"><p>Gagal: '+esc(e.message)+'</p></div>'}
-}
-async function downloadManhwaManual(){
-  var q=document.getElementById('mh-q').value.trim();var ep=parseInt(document.getElementById('mh-ep').value)||1;if(!q)return;
-  downloadManhwaEp(q,ep,'Episode '+ep);
 }
 
 // ── TG DEBUG ───────────────────────────────────────────────────────────────────
@@ -450,4 +556,11 @@ async function _sendWatchDbg(slug,data){
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 window._cards=[];
+
+// Clear komik search & restore home sections saat input dikosongkan
+document.addEventListener('DOMContentLoaded', function() {
+  var kq = document.getElementById('komik-q');
+  if (kq) kq.addEventListener('input', function() { if (!this.value.trim()) _clearKomikSearch(); });
+});
+
 loadHome();
