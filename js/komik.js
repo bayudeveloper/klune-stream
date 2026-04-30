@@ -1,10 +1,10 @@
 // ============================================
 // KLUNE STREAM - Komik API (sankavollerei.com)
-// Base: https://sankavollerei.com
+// Base: https://www.sankavollerei.com
 // Multi-source fallback system
 // ============================================
 
-const COMIC_API = 'https://sankavollerei.com';
+const COMIC_API = 'https://www.sankavollerei.com';
 
 async function comicFetch(path) {
   const res = await fetch(COMIC_API + path, { signal: AbortSignal.timeout(15000) });
