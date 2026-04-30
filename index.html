@@ -6,117 +6,6 @@
   <title>Klune Stream</title>
   <meta name="description" content="Nonton anime, donghua, film, baca komik & manhwa — Klune Stream">
   <link rel="stylesheet" href="css/style.css">
-<style>
-    /* ── KOMIK PAGE ─────────────────────────────────── */
-    .komik-search-topbar {
-      position: sticky; top: 0; z-index: 90;
-      background: rgba(11,11,15,.97);
-      backdrop-filter: blur(12px);
-      padding: 12px 16px 8px;
-      margin: -16px -16px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .komik-search-wrap {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 8px 12px;
-      margin-bottom: 10px;
-    }
-    .komik-search-wrap input {
-      flex: 1; background: none; border: none; outline: none;
-      color: var(--g1); font-size: 14px; font-family: var(--font);
-    }
-    .ks-btn {
-      background: var(--accent); color: #fff; border: none;
-      border-radius: 7px; padding: 6px 14px; font-size: 13px;
-      cursor: pointer; white-space: nowrap;
-    }
-    .komik-type-tabs {
-      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
-      scrollbar-width: none;
-    }
-    .komik-type-tabs::-webkit-scrollbar { display: none; }
-    .kt-tab {
-      background: var(--card); border: 1px solid var(--border);
-      color: var(--g2); border-radius: 20px; padding: 5px 14px;
-      font-size: 12px; cursor: pointer; white-space: nowrap;
-      transition: all .2s;
-    }
-    .kt-tab.kt-active { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .komik-hero {
-      position: relative; height: 220px; border-radius: 14px;
-      overflow: hidden; cursor: pointer; margin-bottom: 24px;
-      background-size: cover; background-position: center top;
-      background-color: var(--card);
-    }
-    .komik-hero-fade {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(11,11,15,.95) 0%, rgba(11,11,15,.3) 60%, transparent 100%);
-    }
-    .komik-hero-content { position: absolute; bottom: 0; left: 0; padding: 20px; }
-    .komik-hero-badge {
-      background: var(--accent); color: #fff; font-size: 10px;
-      padding: 3px 8px; border-radius: 12px; font-weight: 700;
-      letter-spacing: .5px; display: inline-block; margin-bottom: 6px;
-    }
-    .komik-hero-title {
-      font-size: 1.3rem; font-weight: 700; color: var(--g1);
-      line-height: 1.3; margin: 0 0 4px; max-width: 80%;
-    }
-    .komik-hero-ch { font-size: 12px; color: var(--g3); }
-    .sec-row { margin-bottom: 28px; }
-    .row-label { font-size: 15px; font-weight: 700; color: var(--g1); margin-bottom: 12px; }
-    .row-cards {
-      display: flex; gap: 10px; overflow-x: auto;
-      scrollbar-width: none; padding-bottom: 4px;
-    }
-    .row-cards::-webkit-scrollbar { display: none; }
-    .row-cards .card { flex-shrink: 0; width: 140px; }
-    .komik-meta-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .km-badge {
-      background: var(--card); border: 1px solid var(--border);
-      color: var(--g2); font-size: 11px; padding: 3px 9px; border-radius: 20px;
-    }
-    .km-status { color: #22c55e; border-color: rgba(34,197,94,.3); }
-    .km-rating { color: #f59e0b; border-color: rgba(245,158,11,.3); }
-    .komik-genres { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-    .kg-pill {
-      background: rgba(255,255,255,.06); color: var(--g3);
-      font-size: 11px; padding: 3px 9px; border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    /* ── READER ─── */
-    .reader-wrap { max-width: 800px; margin: 0 auto; padding: 0 0 40px; }
-    .reader-topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: rgba(11,11,15,.97);
-      backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 90;
-      border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
-    }
-    .reader-info { flex: 1; min-width: 0; }
-    .reader-manga { display: block; font-size: 13px; font-weight: 700; color: var(--g1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .reader-ch { font-size: 11px; color: var(--g3); }
-    .reader-nav { display: flex; align-items: center; gap: 6px; }
-    .rn-btn {
-      background: var(--card); border: 1px solid var(--border);
-      color: var(--g1); border-radius: 7px; padding: 6px 12px;
-      font-size: 12px; cursor: pointer;
-    }
-    .rn-btn:disabled { opacity: .35; cursor: default; }
-    .rn-select {
-      background: var(--card); border: 1px solid var(--border);
-      color: var(--g1); border-radius: 7px; padding: 6px 10px;
-      font-size: 12px; cursor: pointer; max-width: 110px;
-    }
-    .reader-pages { padding: 0; }
-    .reader-page { margin: 0 auto; max-width: 800px; border-bottom: 2px solid var(--border); }
-    .reader-page img { width: 100%; display: block; }
-    .reader-bottombar { display: flex; justify-content: center; gap: 12px; padding: 24px 16px; flex-wrap: wrap; }
-    .komik-hero-sk {
-      background: linear-gradient(90deg, var(--card) 25%, rgba(255,255,255,.04) 50%, var(--card) 75%);
-      background-size: 200% 100%; animation: sk-wave 1.5s infinite;
-    }
-</style>
 </head>
 <body>
 
@@ -279,38 +168,60 @@
 
   <!-- KOMIK -->
   <div id="page-komik" class="page">
-    <div class="pi">
-      <!-- Sticky search topbar -->
-      <div class="komik-search-topbar">
-        <div class="komik-search-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.5;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="komik-q" placeholder="Cari komik, manga, manhwa, manhua..." 
-            oninput="komikSearchInput(event)"
-            onkeydown="if(event.key==='Enter')doKomikSearch()">
-          <button class="ks-btn" onclick="doKomikSearch()">Cari</button>
+    <section class="hero mini-hero">
+      <div class="hero-bg" id="komik-hero-bg"></div><div class="hero-fade"></div>
+      <div class="hero-content"><div class="hero-badge">📖 Komik</div><h1 class="hero-title">Komik</h1></div>
+    </section>
+    <div class="sections-wrap">
+      <div class="section">
+        <div class="search-bar-page">
+          <input type="text" id="komik-q" placeholder="Cari judul komik..." onkeydown="if(event.key==='Enter')doKomikSearch()">
+          <button class="btn-red" onclick="doKomikSearch()">Cari</button>
         </div>
-        <div class="komik-type-tabs">
-          <button class="kt-tab kt-active" onclick="komikTabClick(this,'home')">🏠 Home</button>
-          <button class="kt-tab" onclick="komikTabClick(this,'manga')">📖 Manga</button>
-          <button class="kt-tab" onclick="komikTabClick(this,'manhwa')">📱 Manhwa</button>
-          <button class="kt-tab" onclick="komikTabClick(this,'manhua')">🀄 Manhua</button>
-          <button class="kt-tab" onclick="komikTabClick(this,'terbaru')">🆕 Terbaru</button>
-        </div>
+        <div id="komik-results"></div>
       </div>
-      <!-- Dynamic body -->
-      <div id="komik-page-body"></div>
+      <div class="section" id="komik-home-popular-section">
+        <div class="section-head"><span class="section-title">Komik Populer</span><span class="section-more" onclick="loadKomikPopular()">Lihat semua →</span></div>
+        <div class="row" id="row-komik-popular"></div>
+      </div>
+      <div class="section" id="komik-home-latest-section">
+        <div class="section-head"><span class="section-title">Komik Terbaru</span><span class="section-more" onclick="loadKomikLatest()">Lihat semua →</span></div>
+        <div class="row" id="row-komik-latest"></div>
+      </div>
+      <div class="section" id="komik-home-trending-section">
+        <div class="section-head"><span class="section-title">Trending</span></div>
+        <div class="row" id="row-komik-trending"></div>
+      </div>
+    </div>
+    <div class="pi" id="komik-grid-section" style="display:none">
+      <div class="pt" id="komik-grid-title">Komik</div>
+      <div class="pgrid" id="grid-komik"></div>
+      <div class="pagination" id="pg-komik"></div>
     </div>
   </div>
 
   <!-- MANHWA -->
   <div id="page-manhwa" class="page">
-    <div class="pi">
-      <div class="pt">Manhwa</div>
-      <div class="search-bar-page">
-        <input type="text" id="manhwa-q" placeholder="Cari judul manhwa / webtoon..." onkeydown="if(event.key==='Enter')doManhwaSearch()">
-        <button class="btn-red" onclick="doManhwaSearch()">Cari</button>
+    <section class="hero mini-hero">
+      <div class="hero-bg" id="manhwa-hero-bg"></div><div class="hero-fade"></div>
+      <div class="hero-content"><div class="hero-badge">📘 Manhwa</div><h1 class="hero-title">Manhwa</h1></div>
+    </section>
+    <div class="sections-wrap">
+      <div class="section">
+        <div class="search-bar-page">
+          <input type="text" id="manhwa-q" placeholder="Cari judul manhwa / webtoon..." onkeydown="if(event.key==='Enter')doManhwaSearch()">
+          <button class="btn-red" onclick="doManhwaSearch()">Cari</button>
+        </div>
+        <div id="manhwa-results"></div>
       </div>
-      <div id="manhwa-results"><div class="hint-msg">Ketik judul manhwa untuk mulai mencari</div></div>
+      <div class="section" id="manhwa-home-popular-section">
+        <div class="section-head"><span class="section-title">Manhwa Populer</span></div>
+        <div class="row" id="row-manhwa-popular"></div>
+      </div>
+      <div class="section" id="manhwa-home-latest-section">
+        <div class="section-head"><span class="section-title">Manhwa Terbaru</span></div>
+        <div class="row" id="row-manhwa-latest"></div>
+      </div>
     </div>
   </div>
 
@@ -333,65 +244,5 @@
 <script src="js/api.js"></script>
 <script src="js/komik.js"></script>
 <script src="js/app.js"></script>
-
-<script>
-// Komik tab handler
-function komikTabClick(btn, tipe) {
-  document.querySelectorAll('.kt-tab').forEach(function(b) { b.classList.remove('kt-active'); });
-  btn.classList.add('kt-active');
-  var c = document.getElementById('komik-page-body');
-  if (tipe === 'home') {
-    loadKomikHome();
-  } else if (tipe === 'terbaru') {
-    c.innerHTML = '<div class="sp-wrap"><div class="sp"></div></div>';
-    KomikAPI.getTerbaru(1).then(function(list) {
-      window._cards = window._cards || [];
-      c.innerHTML = '<div class="pgrid">' + (list||[]).map(function(i){return card(i,'komik')}).join('') + '</div>';
-    }).catch(function(e){ c.innerHTML='<div class="err"><p>' + e.message + '</p></div>'; });
-  } else {
-    c.innerHTML = '<div class="sp-wrap"><div class="sp"></div></div>';
-    KomikAPI.getByType(tipe, 1).then(function(list) {
-      window._cards = window._cards || [];
-      c.innerHTML = '<div class="sec-row"><div class="row-label">' + 
-        {manga:'📖 Manga', manhwa:'📱 Manhwa', manhua:'🀄 Manhua'}[tipe] +
-        '</div><div class="pgrid">' + (list||[]).map(function(i){return card(i,'komik')}).join('') + '</div></div>';
-    }).catch(function(e){ c.innerHTML='<div class="err"><p>' + e.message + '</p></div>'; });
-  }
-}
-</script>
-
-
-<script>
-// Override navigate for komik to load homepage
-(function() {
-  var _origNavigate = window.navigate;
-  window.navigate = function(page) {
-    if (page === 'komik') {
-      showPage('komik');
-      if (!document.getElementById('komik-page-body').innerHTML.trim() || 
-           document.getElementById('komik-page-body').innerHTML.includes('hint-msg')) {
-        loadKomikHome();
-      }
-      closeSidebar && closeSidebar();
-      return;
-    }
-    if (_origNavigate) _origNavigate(page);
-  };
-  // Auto-load on first visit
-  document.addEventListener('DOMContentLoaded', function() {
-    // Trigger on first time komik is shown
-    var origShowPage = window.showPage;
-    var komikLoaded = false;
-    window.showPage = function(name) {
-      if (origShowPage) origShowPage(name);
-      if (name === 'komik' && !komikLoaded) {
-        komikLoaded = true;
-        loadKomikHome();
-      }
-    };
-  });
-})();
-</script>
-
 </body>
 </html>
